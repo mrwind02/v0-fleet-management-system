@@ -1,26 +1,25 @@
-import pg from "pg"
+import { PGlite } from "@electric-sql/pglite"
 import dotenv from "dotenv"
+import path from "path"
 
 dotenv.config()
 
-const pool = new pg.Pool({
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "postgres",
-  host: process.env.DB_HOST || "localhost",
-  port: Number.parseInt(process.env.DB_PORT || "5432"),
-  database: process.env.DB_NAME || "fleet_management",
-})
+// Create data directory path relative to project root
+const dataDir = path.join(process.cwd(), "./data/pg_data");
 
-pool.on("error", (err) => {
-  console.error("Unexpected error on idle client", err)
-})
+console.log(`Initializing PGlite database at: ${dataDir}`);
+
+// Initialize PGlite instance
+const db = new PGlite(dataDir);
+
 
 export async function query(text: string, params?: any[]) {
   const start = Date.now()
   try {
-    const res = await pool.query(text, params)
+    // PGlite query returns { rows: [], fields: [], ... }
+    const res = await db.query(text, params)
     const duration = Date.now() - start
-    console.log("Executed query", { text, duration, rows: res.rowCount })
+    // console.log("Executed query", { text, duration, rows: res.rows.length })
     return res
   } catch (error) {
     console.error("Database query error", { text, error })
@@ -29,7 +28,11 @@ export async function query(text: string, params?: any[]) {
 }
 
 export async function getClient() {
-  return pool.connect()
+  // PGlite doesn't have a pool/connect model in the same way, 
+  // currently we just return the db instance or a mock client if strictly needed.
+  // For most simple usages, accessing db directly is fine.
+  return db;
 }
 
-export default pool
+export default db
+

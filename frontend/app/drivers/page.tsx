@@ -2,35 +2,42 @@
 
 import { useState } from "react"
 import { MainLayout } from "@/components/layout/MainLayout"
+import { DriverList } from "@/components/drivers/DriverList"
 import { DriverForm } from "@/components/drivers/DriverForm"
-
-interface Driver {
-  id: string
-  name: string
-  cnhNumber: string
-  cnhCategory: string
-  cnhExpiryDate: string
-  phone?: string
-  email?: string
-}
 
 export default function DriversPage() {
   const [showForm, setShowForm] = useState(false)
-  const [drivers, setDrivers] = useState<Driver[]>([])
+  const [editingDriver, setEditingDriver] = useState<any>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
   const handleSuccess = () => {
     setShowForm(false)
+    setEditingDriver(null)
     setRefreshKey((prev) => prev + 1)
+  }
+
+  const handleEdit = (driver: any) => {
+    setEditingDriver(driver)
+    setShowForm(true)
+  }
+
+  const toggleForm = () => {
+    if (showForm) {
+      setShowForm(false)
+      setEditingDriver(null)
+    } else {
+      setShowForm(true)
+      setEditingDriver(null)
+    }
   }
 
   return (
     <MainLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
+      <div>
+        <div className="flex justify-between items-center" style={{ marginBottom: '3mm' }}>
           <h1 className="text-3xl font-bold text-gray-900">Motoristas</h1>
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={toggleForm}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition"
           >
             {showForm ? "Listar" : "Novo Motorista"}
@@ -39,11 +46,14 @@ export default function DriversPage() {
 
         {showForm ? (
           <div className="bg-white p-6 rounded-lg shadow">
-            <DriverForm onSuccess={handleSuccess} />
+            <h2 className="text-xl font-bold mb-6 text-gray-800">
+              {editingDriver ? 'Editar Motorista' : 'Novo Motorista'}
+            </h2>
+            <DriverForm onSuccess={handleSuccess} initialData={editingDriver} />
           </div>
         ) : (
-          <div className="bg-white p-6 rounded-lg shadow">
-            <p className="text-gray-600">Selecione "Novo Motorista" para adicionar um motorista.</p>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <DriverList key={refreshKey} onEdit={handleEdit} />
           </div>
         )}
       </div>

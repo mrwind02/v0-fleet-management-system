@@ -56,8 +56,8 @@ export default function MaintenancePage() {
 
   return (
     <MainLayout>
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900">Manutenção</h1>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900" style={{ marginBottom: '3mm' }}>Manutenção</h1>
 
         <div className="bg-white p-6 rounded-lg shadow">
           <label className="block text-sm font-medium text-gray-700 mb-2">Selecione um Veículo</label>
@@ -116,18 +116,17 @@ export default function MaintenancePage() {
                           </td>
                           <td className="px-6 py-4 text-sm">
                             <span
-                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                record.maintenanceType === "preventiva"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100 text-red-800"
-                              }`}
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${record.maintenanceType === "preventiva"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                                }`}
                             >
                               {record.maintenanceType}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">{record.establishmentName}</td>
                           <td className="px-6 py-4 text-sm text-gray-600">
-                            {record.cost ? `R$ ${record.cost.toFixed(2)}` : "-"}
+                            {record.cost ? `R$ ${Number(record.cost).toFixed(2)}` : "-"}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">{record.odometerReading || "-"}</td>
                         </tr>
@@ -140,6 +139,6 @@ export default function MaintenancePage() {
           </>
         )}
       </div>
-    </MainLayout>
+    </MainLayout >
   )
 }

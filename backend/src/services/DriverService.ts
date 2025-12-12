@@ -89,7 +89,7 @@ export class DriverService {
       [vehicleId, driverId, notes],
     )
 
-    return result.rows[0]
+    return result.rows[0] as VehicleDriverAssignment
   }
 
   async getCurrentVehicle(driverId: string): Promise<any> {
@@ -101,6 +101,10 @@ export class DriverService {
     )
 
     return result.rows.length > 0 ? result.rows[0] : null
+  }
+
+  async delete(id: string): Promise<void> {
+    await query("UPDATE drivers SET is_active = false WHERE id = $1", [id])
   }
 
   private mapToDriver(row: any): Driver {

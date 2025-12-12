@@ -44,24 +44,49 @@ export class ReportService {
     return result.rows
   }
 
-  async getDashboardMetrics(): Promise<any> {
-    const vehicleCount = await query("SELECT COUNT(*) as count FROM vehicles WHERE is_active = true")
-
-    const driverCount = await query("SELECT COUNT(*) as count FROM drivers WHERE is_active = true")
-
-    const maintenanceToday = await query(
-      `SELECT COUNT(*) as count FROM maintenance_records 
-       WHERE maintenance_date = CURRENT_DATE`,
+  async getDashboardMetrics() {
+    const activeVehicles = await query("SELECT COUNT(*) FROM vehicles WHERE is_active = true")
+    const activeDrivers = await query("SELECT COUNT(*) FROM drivers WHERE is_active = true")
+    const maintenancesToday = await query(
+      "SELECT COUNT(*) FROM maintenance_records WHERE maintenance_date = CURRENT_DATE",
     )
+    // Note: Use the new PGlite compatible table names if changed, but schema used 'maintenance_records' etc.
+    // The previous code had "maintenance" and "users" which might be wrong looking at seed.js.
+    // Seed.js uses 'maintenance_records', 'drivers', 'users', 'vehicles'.
+    // Wait, the original code I replaced had:
+    // vehicles, users (for drivers?), maintenace (wrong table name?)
+    // Let's check schema/seed again to be sure of table names.
+    // Schema: maintenance_records.
+    // Schema: drivers.
+    // Schema: vehicles.
 
-    const totalKm = await query(`SELECT SUM(odometer_reading) as total FROM maintenance_records`)
+    // Original code:
+    // SELECT COUNT(*) FROM vehicles WHERE status = 'active' (Schema says 'is_active')
+    // SELECT COUNT(*) FROM users WHERE role = 'driver' (Schema has drivers table linked to users)
+
+    // I should rewrite this to match the actual schema I seeded.
+    // Schema: vehicles(is_active), drivers(is_active)
+
+    const totalKm = await query("SELECT SUM(odometer_reading) FROM maintenance_records") // Just an estimation or sum from vehicles?
+    // Schema vehicles doesn't have odometer. maintenance_records has odometer_reading.
 
     return {
-      activeVehicles: vehicleCount.rows[0].count,
-      activeDrivers: driverCount.rows[0].count,
-      maintenancesToday: maintenanceToday.rows[0].count,
-      totalKilometers: totalKm.rows[0].total || 0,
+      activeVehicles: Number.parseInt((activeVehicles.rows[0] as any).count),
+      activeDrivers: Number.parseInt((activeDrivers.rows[0] as any).count),
+      maintenancesToday: Number.parseInt((maintenancesToday.rows[0] as any).count),
+      totalKilometers: Number.parseInt((totalKm.rows[0] as any).sum) || 0,
     }
+  }
+
+  async getRecentMaintenance(limit = 5) {
+    const result = await query(
+      `SELECT id, maintenance_date, establishment_name, maintenance_type, cost 
+       FROM maintenance_records 
+       ORDER BY maintenance_date DESC 
+       LIMIT $1`,
+      [limit],
+    )
+    return result.rows
   }
 
   generateCSV(data: any[], headers: string[]): string {

@@ -14,6 +14,16 @@ router.get("/metrics", authenticateToken, authorize("admin", "manager"), async (
   }
 })
 
+router.get("/recent-maintenance", authenticateToken, authorize("admin", "manager"), async (req, res) => {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 5
+    const data = await service.getRecentMaintenance(limit)
+    res.json({ success: true, data })
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message })
+  }
+})
+
 router.get("/maintenance/csv", authenticateToken, authorize("admin", "manager"), async (req, res) => {
   try {
     const { vehicleId, startDate, endDate } = req.query

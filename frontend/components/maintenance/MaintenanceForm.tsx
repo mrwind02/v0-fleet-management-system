@@ -18,6 +18,12 @@ export function MaintenanceForm({ vehicleId, onSuccess }: MaintenanceFormProps) 
     formState: { errors },
   } = useForm()
 
+  const parseFormattedNumber = (value: any) => {
+    if (!value) return undefined
+    const stringValue = String(value).replace(",", ".")
+    return Number.parseFloat(stringValue)
+  }
+
   const onSubmit = async (data: any) => {
     setError("")
     setIsLoading(true)
@@ -30,8 +36,8 @@ export function MaintenanceForm({ vehicleId, onSuccess }: MaintenanceFormProps) 
         mechanicName: data.mechanicName,
         establishmentName: data.establishmentName,
         serviceDescription: data.serviceDescription,
-        cost: data.cost ? Number.parseFloat(data.cost) : undefined,
-        odometerReading: data.odometerReading ? Number.parseInt(data.odometerReading) : undefined,
+        cost: parseFormattedNumber(data.cost),
+        odometerReading: parseFormattedNumber(data.odometerReading),
       })
       onSuccess?.()
     } catch (err: any) {
@@ -100,9 +106,8 @@ export function MaintenanceForm({ vehicleId, onSuccess }: MaintenanceFormProps) 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Custo (R$)</label>
           <input
-            type="number"
-            placeholder="500.00"
-            step="0.01"
+            type="text"
+            placeholder="500,00"
             {...register("cost")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
@@ -111,8 +116,8 @@ export function MaintenanceForm({ vehicleId, onSuccess }: MaintenanceFormProps) 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Quilometragem</label>
           <input
-            type="number"
-            placeholder="150000"
+            type="text"
+            placeholder="150000,5"
             {...register("odometerReading")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />

@@ -38,7 +38,7 @@ router.post("/", authenticateToken, authorize("admin", "manager", "driver"), asy
       establishmentName,
       serviceDescription,
       cost: cost ? Number.parseFloat(cost) : undefined,
-      odometerReading: odometerReading ? Number.parseInt(odometerReading) : undefined,
+      odometerReading: odometerReading ? Number.parseFloat(odometerReading) : undefined,
       attachments,
     })
 

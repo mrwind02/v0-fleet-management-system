@@ -103,4 +103,13 @@ export class DriverController {
       res.status(400).json({ success: false, error: error.message })
     }
   }
+  async delete(req: Request, res: Response) {
+    try {
+      const { id } = req.params
+      await this.driverService.delete(id)
+      res.json({ success: true, message: "Driver deleted successfully" })
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message })
+    }
+  }
 }

@@ -77,6 +77,7 @@ export const driverService = {
   assignToVehicle: (driverId: string, vehicleId: string, notes?: string) =>
     api.post(`/drivers/${driverId}/assign-vehicle`, { vehicleId, notes }),
   getCurrentVehicle: (driverId: string) => api.get(`/drivers/${driverId}/current-vehicle`),
+  delete: (id: string) => api.delete(`/drivers/${id}`),
 }
 
 // Maintenance Services
@@ -98,6 +99,7 @@ export const questionnaireService = {
 // Report Services
 export const reportService = {
   getMetrics: () => api.get("/reports/metrics"),
+  getRecentMaintenance: (limit?: number) => api.get("/reports/recent-maintenance", { params: { limit } }),
   exportMaintenanceCSV: (filters?: any) =>
     api.get("/reports/maintenance/csv", { params: filters, responseType: "blob" }),
   exportQuestionnaireCSV: (startDate: string, endDate: string) =>

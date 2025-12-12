@@ -1,18 +1,13 @@
-const pg = require("pg")
+const { PGlite } = require("@electric-sql/pglite")
 const fs = require("fs")
 const path = require("path")
 require("dotenv").config()
 
-const pool = new pg.Pool({
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "postgres",
-  host: process.env.DB_HOST || "localhost",
-  port: Number.parseInt(process.env.DB_PORT || "5432"),
-  database: process.env.DB_NAME || "fleet_management",
-})
+const dataDir = path.join(__dirname, "../data/pg_data")
 
 async function runMigrations() {
-  const client = await pool.connect()
+  console.log(`🔄 Connecting to PGlite at ${dataDir}...`)
+  const db = new PGlite(dataDir);
 
   try {
     console.log("🔄 Running migrations...")
@@ -21,16 +16,19 @@ async function runMigrations() {
     const migrationPath = path.join(__dirname, "../database/migrations/001_initial_schema.sql")
     const migration = fs.readFileSync(migrationPath, "utf8")
 
-    await client.query(migration)
+    // Support multiple statements if the driver allows, or split them?
+    // PGlite .exec() handles multiple statements. .query() might not.
+    // Let's us .exec() for migration scripts which are usually multi-statement.
+    await db.exec(migration)
 
     console.log("✅ Migrations completed successfully!")
   } catch (error) {
     console.error("❌ Migration error:", error)
     throw error
   } finally {
-    client.release()
-    await pool.end()
+    await db.close()
   }
 }
 
 runMigrations().catch(console.error)
+

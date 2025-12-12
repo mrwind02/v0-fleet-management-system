@@ -25,15 +25,20 @@ export class VehicleService {
   }
 
   async getAll(isActive?: boolean): Promise<Vehicle[]> {
-    let sql = "SELECT * FROM vehicles"
+    let sql = `
+      SELECT v.*, d.name as driver_name, d.id as driver_id
+      FROM vehicles v
+      LEFT JOIN vehicle_driver_assignment vda ON v.id = vda.vehicle_id AND vda.is_current = true
+      LEFT JOIN drivers d ON vda.driver_id = d.id
+    `
     const params: any[] = []
 
     if (isActive !== undefined) {
-      sql += " WHERE is_active = $1"
+      sql += " WHERE v.is_active = $1"
       params.push(isActive)
     }
 
-    sql += " ORDER BY created_at DESC"
+    sql += " ORDER BY v.created_at DESC"
 
     const result = await query(sql, params)
     return result.rows.map((row) => this.mapToVehicle(row))
@@ -98,6 +103,8 @@ export class VehicleService {
       isActive: row.is_active,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+      driverName: row.driver_name,
+      driverId: row.driver_id,
     }
   }
 }
