@@ -49,6 +49,7 @@
     "dotenv": "latest",
     "embla-carousel-react": "8.5.1",
     "express": "latest",
+    "framer-motion": "^12.23.26",
     "fs": "latest",
     "helmet": "latest",
     "http": "latest",
