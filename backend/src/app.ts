@@ -13,7 +13,12 @@ const PORT = process.env.PORT || 3000
 // Middlewares
 app.use(helmet())
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3001", process.env.CORS_ORIGIN || "*"],
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://frotaone.vercel.app",
+    process.env.CORS_ORIGIN || "*"
+  ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
