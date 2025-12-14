@@ -1,17 +1,30 @@
 import { PGlite } from "@electric-sql/pglite"
 import dotenv from "dotenv"
 import path from "path"
+import fs from "fs"
 
 dotenv.config()
 
-// Create data directory path relative to project root
 // Create data directory path relative to project root (from src/config/database.ts -> ../../data/pg_data)
 const dataDir = path.join(__dirname, "../../data/pg_data");
 
+// Ensure directory exists
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  console.log(`Created data directory: ${dataDir}`);
+}
+
 console.log(`Initializing PGlite database at: ${dataDir}`);
 
-// Initialize PGlite instance
-const db = new PGlite(dataDir);
+// Initialize PGlite instance with error handling
+let db: PGlite;
+try {
+  db = new PGlite(dataDir);
+  console.log("PGlite initialized successfully");
+} catch (error) {
+  console.error("Failed to initialize PGlite:", error);
+  throw error;
+}
 
 // Perform initialization queries
 (async () => {
