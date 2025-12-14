@@ -9,6 +9,11 @@ import settingsRoutes from "./settings"
 import usersRoutes from "./users"
 
 export function setupRoutes(app: any) {
+  // Health check for monitoring
+  app.get("/api/health", (req: any, res: any) => {
+    res.json({ status: "OK", timestamp: new Date().toISOString() })
+  })
+
   app.use("/api/auth", authRoutes)
   app.use("/api/vehicles", vehicleRoutes)
   app.use("/api/drivers", driverRoutes)
