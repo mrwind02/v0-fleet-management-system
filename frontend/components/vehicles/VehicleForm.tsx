@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { vehicleService } from "@/services/api"
+import { vehicleService } from "../../services/api"
 
 interface VehicleFormProps {
   onSuccess?: () => void

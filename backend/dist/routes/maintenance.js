@@ -27,7 +27,7 @@ router.post("/", auth_1.authenticateToken, (0, auth_1.authorize)("admin", "manag
             establishmentName,
             serviceDescription,
             cost: cost ? Number.parseFloat(cost) : undefined,
-            odometerReading: odometerReading ? Number.parseInt(odometerReading) : undefined,
+            odometerReading: odometerReading ? Number.parseFloat(odometerReading) : undefined,
             attachments,
         });
         res.status(201).json({ success: true, data: record });

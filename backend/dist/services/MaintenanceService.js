@@ -104,7 +104,7 @@ class MaintenanceService {
             serviceDescription: row.service_description,
             cost: row.cost,
             odometerReading: row.odometer_reading,
-            attachments: row.attachments ? JSON.parse(row.attachments) : [],
+            attachments: typeof row.attachments === "string" ? JSON.parse(row.attachments) : row.attachments || [],
             createdAt: row.created_at,
             updatedAt: row.updated_at,
         };

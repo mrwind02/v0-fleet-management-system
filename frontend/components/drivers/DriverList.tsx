@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { driverService } from "@/services/api"
+import { driverService } from "../../services/api"
 import { Pencil, Trash2 } from "lucide-react"
 
 interface Driver {
@@ -12,7 +12,7 @@ interface Driver {
     cnhExpiryDate: string
     phone?: string
     email?: string
-    status: string
+    isActive: boolean
 }
 
 interface DriverListProps {
@@ -29,7 +29,7 @@ export function DriverList({ onEdit }: DriverListProps) {
 
     const loadDrivers = async () => {
         try {
-            const response = await driverService.getAll(true)
+            const response = await driverService.getAll(undefined) // Pass undefined to get all (active and inactive)
             setDrivers(response.data.data)
         } catch (error) {
             console.error("Error loading drivers:", error)
@@ -90,11 +90,11 @@ export function DriverList({ onEdit }: DriverListProps) {
                                 {new Date(driver.cnhExpiryDate).toLocaleDateString()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${driver.status === 'active'
+                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${driver.isActive
                                     ? 'bg-green-100 text-green-800'
                                     : 'bg-red-100 text-red-800'
                                     }`}>
-                                    {driver.status === 'active' ? 'Ativo' : 'Inativo'}
+                                    {driver.isActive ? 'Ativo' : 'Inativo'}
                                 </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

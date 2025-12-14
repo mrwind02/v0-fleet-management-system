@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useAuthStore } from "@/store/authStore"
-import { LayoutDashboard, Truck, Users, Wrench, Activity, FileText, LogOut, ChevronDown } from "lucide-react"
+import { useAuthStore } from "../../store/authStore"
+import { LayoutDashboard, Truck, Users, Wrench, Activity, FileText, LogOut, ChevronDown, Shield } from "lucide-react"
 import { useState } from "react"
 import { motion } from "framer-motion"
 
@@ -94,6 +94,18 @@ export function Header() {
                       <p className="text-sm font-medium text-gray-900">{user.name}</p>
                       <p className="text-xs text-gray-500 truncate">{user.email}</p>
                     </div>
+
+                    {user.role === 'admin' && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors gap-2"
+                      >
+                        <Shield className="h-4 w-4" />
+                        Painel Admin
+                      </Link>
+                    )}
+
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors gap-2"

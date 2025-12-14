@@ -44,7 +44,7 @@ class DriverService {
         let paramCount = 1;
         Object.entries(driverData).forEach(([key, value]) => {
             const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
-            if (!["id", "created_at", "user_id"].includes(snakeKey)) {
+            if (!["id", "created_at", "user_id", "updated_at"].includes(snakeKey)) {
                 updates.push(`${snakeKey} = $${paramCount}`);
                 values.push(value);
                 paramCount++;

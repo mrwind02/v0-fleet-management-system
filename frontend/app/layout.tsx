@@ -2,7 +2,6 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist } from "next/font/google"
 import { AuthProvider } from "@/components/providers/AuthProvider"
-import { LoginDebugPanel } from "@/components/auth/LoginDebugPanel"
 import "./globals.css"
 
 const geist = Geist({ subsets: ["latin"] })
@@ -21,7 +20,6 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={geist.className}>
         <AuthProvider>{children}</AuthProvider>
-        <LoginDebugPanel />
       </body>
     </html>
   )

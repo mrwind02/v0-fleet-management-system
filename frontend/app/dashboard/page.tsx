@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuthStore } from "@/store/authStore"
-import { reportService } from "@/services/api"
-import { MainLayout } from "@/components/layout/MainLayout"
+import { useAuthStore } from "../../store/authStore"
+import { reportService } from "../../services/api"
+import { MainLayout } from "../../components/layout/MainLayout"
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<any>(null)
@@ -122,8 +122,8 @@ export default function DashboardPage() {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <span className={`px-2 py-1 text-xs font-semibold rounded-full ${item.maintenance_type === 'preventiva'
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-red-100 text-red-800'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
                                     }`}>
                                     {item.maintenance_type}
                                   </span>

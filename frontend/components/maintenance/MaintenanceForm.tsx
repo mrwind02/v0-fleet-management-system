@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { maintenanceService } from "@/services/api"
+import { maintenanceService } from "../../services/api"
 
 interface MaintenanceFormProps {
   vehicleId: string

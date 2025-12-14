@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { driverService } from "@/services/api"
+import { driverService } from "../../services/api"
 
 interface DriverFormProps {
   onSuccess?: () => void
@@ -122,6 +122,18 @@ export function DriverForm({ onSuccess, initialData }: DriverFormProps) {
         />
         <label htmlFor="specialLoad" className="ml-2 text-sm text-gray-700">
           Habilitado para cargas especiais
+        </label>
+      </div>
+
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          id="isActive"
+          {...register("isActive")}
+          className="w-4 h-4 text-blue-600 rounded"
+        />
+        <label htmlFor="isActive" className="ml-2 text-sm text-gray-700">
+          Motorista Ativo
         </label>
       </div>
 

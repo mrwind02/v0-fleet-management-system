@@ -43,9 +43,23 @@ export class DriverService {
     return result.rows.length > 0 ? this.mapToDriver(result.rows[0]) : null
   }
 
+  async getByUserId(userId: string): Promise<Driver | null> {
+    const result = await query("SELECT * FROM drivers WHERE user_id = $1", [userId])
+    return result.rows.length > 0 ? this.mapToDriver(result.rows[0]) : null
+  }
+
   async getByCNH(cnhNumber: string): Promise<Driver | null> {
     const result = await query("SELECT * FROM drivers WHERE cnh_number = $1", [cnhNumber])
     return result.rows.length > 0 ? this.mapToDriver(result.rows[0]) : null
+  }
+
+  async getByEmail(email: string): Promise<Driver | null> {
+    const result = await query("SELECT * FROM drivers WHERE email = $1", [email])
+    return result.rows.length > 0 ? this.mapToDriver(result.rows[0]) : null
+  }
+
+  async linkToUser(driverId: string, userId: string): Promise<void> {
+    await query("UPDATE drivers SET user_id = $1 WHERE id = $2", [userId, driverId])
   }
 
   async update(id: string, driverData: Partial<Driver>): Promise<Driver> {

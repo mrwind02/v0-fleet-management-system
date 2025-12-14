@@ -54,7 +54,7 @@ api.interceptors.response.use(
 
 // Auth Services
 export const authService = {
-  register: (email: string, password: string, name: string) => api.post("/auth/register", { email, password, name }),
+  register: (email: string, password: string, name: string, role?: string) => api.post("/auth/register", { email, password, name, role }),
   login: (email: string, password: string) => api.post("/auth/login", { email, password }),
   getProfile: () => api.get("/auth/profile"),
 }
@@ -102,6 +102,24 @@ export const reportService = {
   getRecentMaintenance: (limit?: number) => api.get("/reports/recent-maintenance", { params: { limit } }),
   exportMaintenanceCSV: (filters?: any) =>
     api.get("/reports/maintenance/csv", { params: filters, responseType: "blob" }),
-  exportQuestionnaireCSV: (startDate: string, endDate: string) =>
-    api.get("/reports/questionnaire/csv", { params: { startDate, endDate }, responseType: "blob" }),
+  exportMaintenancePDF: (filters?: any) =>
+    api.get("/reports/maintenance/pdf", { params: filters, responseType: "blob" }),
+  exportQuestionnaireCSV: (startDate: string, endDate: string, driverId?: string, timezone?: string) =>
+    api.get("/reports/questionnaire/csv", { params: { startDate, endDate, driverId, timezone }, responseType: "blob" }),
+  exportQuestionnairePDF: (startDate: string, endDate: string, driverId?: string, timezone?: string) =>
+    api.get("/reports/questionnaire/pdf", { params: { startDate, endDate, driverId, timezone }, responseType: "blob" }),
+}
+
+// User Services (Admin)
+export const userService = {
+  getAll: () => api.get("/users"),
+  update: (id: string, data: any) => api.put(`/users/${id}`, data),
+  delete: (id: string) => api.delete(`/users/${id}`),
+}
+
+// Settings Services
+export const settingsService = {
+  getPublic: (key: string) => api.get("/settings/public", { params: { key } }),
+  getAll: () => api.get("/settings"),
+  update: (key: string, value: string) => api.put(`/settings/${key}`, { value }),
 }

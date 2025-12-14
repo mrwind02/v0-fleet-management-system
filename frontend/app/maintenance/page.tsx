@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MainLayout } from "@/components/layout/MainLayout"
-import { MaintenanceForm } from "@/components/maintenance/MaintenanceForm"
-import { vehicleService, maintenanceService } from "@/services/api"
+import { MainLayout } from "../../components/layout/MainLayout"
+import { MaintenanceForm } from "../../components/maintenance/MaintenanceForm"
+import { vehicleService, maintenanceService } from "../../services/api"
 
 export default function MaintenancePage() {
   const [vehicles, setVehicles] = useState<any[]>([])

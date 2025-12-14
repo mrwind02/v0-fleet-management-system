@@ -62,6 +62,13 @@ class ReportService {
             totalKilometers: Number.parseInt(totalKm.rows[0].sum) || 0,
         };
     }
+    async getRecentMaintenance(limit = 5) {
+        const result = await (0, database_1.query)(`SELECT id, maintenance_date, establishment_name, maintenance_type, cost 
+       FROM maintenance_records 
+       ORDER BY maintenance_date DESC 
+       LIMIT $1`, [limit]);
+        return result.rows;
+    }
     generateCSV(data, headers) {
         let csv = headers.join(",") + "\n";
         data.forEach((row) => {

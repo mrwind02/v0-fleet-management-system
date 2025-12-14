@@ -1,11 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { MainLayout } from "@/components/layout/MainLayout"
-import { VehicleForm } from "@/components/vehicles/VehicleForm"
-import { VehicleList } from "@/components/vehicles/VehicleList"
+import { MainLayout } from "../../components/layout/MainLayout"
+import { VehicleForm } from "../../components/vehicles/VehicleForm"
+import { VehicleList } from "../../components/vehicles/VehicleList"
 
-import { VehicleAssignmentModal } from "@/components/vehicles/VehicleAssignmentModal"
+import { VehicleAssignmentModal } from "../../components/vehicles/VehicleAssignmentModal"
 
 export default function VehiclesPage() {
   const [showForm, setShowForm] = useState(false)

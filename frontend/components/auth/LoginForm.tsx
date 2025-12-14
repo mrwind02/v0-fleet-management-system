@@ -4,8 +4,9 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuthStore } from "@/store/authStore"
-import { authService } from "@/services/api"
+import Link from "next/link"
+import { useAuthStore } from "../../store/authStore"
+import { authService } from "../../services/api"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -78,12 +79,6 @@ export function LoginForm() {
               </div>
             )}
 
-            {debugInfo && (
-              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded text-sm font-mono text-xs whitespace-pre-wrap">
-                {debugInfo}
-              </div>
-            )}
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
@@ -115,21 +110,17 @@ export function LoginForm() {
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm text-gray-700">
-            <p className="font-semibold mb-2">Credenciais de Teste:</p>
-            <p>Admin: admin@fleet.com</p>
-            <p>Gerente: manager@fleet.com</p>
-            <p>Motorista: driver1@fleet.com</p>
-            <p>Senha: password123</p>
-          </div>
-
-          <div className="mt-4 p-3 bg-gray-100 rounded-lg text-xs text-gray-600 font-mono">
-            <p className="font-semibold mb-1">Info de Debug:</p>
-            <p>API URL: {process.env.NEXT_PUBLIC_API_URL}</p>
-            <p>Node Env: {process.env.NODE_ENV}</p>
+          <div className="mt-6 text-center text-sm text-gray-600">
+            <p>
+              Não tem uma conta?{" "}
+              <Link href="/register" className="text-blue-600 hover:text-blue-800 font-medium">
+                Crie sua conta
+              </Link>
+            </p>
           </div>
         </div>
       </div>
     </div>
+
   )
 }

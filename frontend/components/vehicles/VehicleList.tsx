@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { vehicleService } from "@/services/api"
+import { vehicleService } from "../../services/api"
 import { Pencil, Trash2, UserPlus } from "lucide-react"
 
 interface Vehicle {

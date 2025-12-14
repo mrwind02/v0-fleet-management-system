@@ -17,6 +17,16 @@ router.get("/metrics", auth_1.authenticateToken, (0, auth_1.authorize)("admin", 
         res.status(400).json({ success: false, error: error.message });
     }
 });
+router.get("/recent-maintenance", auth_1.authenticateToken, (0, auth_1.authorize)("admin", "manager"), async (req, res) => {
+    try {
+        const limit = req.query.limit ? Number(req.query.limit) : 5;
+        const data = await service.getRecentMaintenance(limit);
+        res.json({ success: true, data });
+    }
+    catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+    }
+});
 router.get("/maintenance/csv", auth_1.authenticateToken, (0, auth_1.authorize)("admin", "manager"), async (req, res) => {
     try {
         const { vehicleId, startDate, endDate } = req.query;

@@ -5,12 +5,23 @@ import path from "path"
 dotenv.config()
 
 // Create data directory path relative to project root
-const dataDir = path.join(process.cwd(), "./data/pg_data");
+// Create data directory path relative to project root (from src/config/database.ts -> ../../data/pg_data)
+const dataDir = path.join(__dirname, "../../data/pg_data");
 
 console.log(`Initializing PGlite database at: ${dataDir}`);
 
 // Initialize PGlite instance
 const db = new PGlite(dataDir);
+
+// Perform initialization queries
+(async () => {
+  try {
+    await db.query("SET TIME ZONE 'UTC';");
+    console.log("Database timezone set to UTC");
+  } catch (err) {
+    console.error("Failed to set database timezone", err);
+  }
+})();
 
 
 export async function query(text: string, params?: any[]) {

@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { MainLayout } from "@/components/layout/MainLayout"
-import { DriverList } from "@/components/drivers/DriverList"
-import { DriverForm } from "@/components/drivers/DriverForm"
+import { MainLayout } from "../../components/layout/MainLayout"
+import { DriverList } from "../../components/drivers/DriverList"
+import { DriverForm } from "../../components/drivers/DriverForm"
 
 export default function DriversPage() {
   const [showForm, setShowForm] = useState(false)

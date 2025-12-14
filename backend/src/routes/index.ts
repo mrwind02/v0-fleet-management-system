@@ -5,6 +5,9 @@ import maintenanceRoutes from "./maintenance"
 import questionnaireRoutes from "./questionnaire"
 import reportRoutes from "./reports"
 
+import settingsRoutes from "./settings"
+import usersRoutes from "./users"
+
 export function setupRoutes(app: any) {
   app.use("/api/auth", authRoutes)
   app.use("/api/vehicles", vehicleRoutes)
@@ -12,4 +15,6 @@ export function setupRoutes(app: any) {
   app.use("/api/maintenance", maintenanceRoutes)
   app.use("/api/questionnaire", questionnaireRoutes)
   app.use("/api/reports", reportRoutes)
+  app.use("/api/settings", settingsRoutes)
+  app.use("/api/users", usersRoutes)
 }
