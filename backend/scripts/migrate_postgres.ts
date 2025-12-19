@@ -22,30 +22,34 @@ async function runMigrations() {
 
     try {
         // Read and run migration files in order
-        const migrations = [
-            "001_initial_schema.sql",
-            "002_driver_questionnaire.sql",
-            "003_create_settings.sql"
+        const migrationDirs = [
+            path.join(__dirname, "../database/migrations"),
+            path.join(__dirname, "../migrations")
         ]
 
-        for (const migrationFile of migrations) {
-            console.log(`\n📄 Running migration: ${migrationFile}`)
-            const sqlPath = path.join(__dirname, "../database/migrations", migrationFile)
+        let migrationFiles: { name: string, path: string }[] = []
 
-            if (!fs.existsSync(sqlPath)) {
-                console.warn(`⚠️  Migration file not found: ${sqlPath}`)
-                continue
+        for (const dir of migrationDirs) {
+            if (fs.existsSync(dir)) {
+                const files = fs.readdirSync(dir).filter(f => f.endsWith('.sql'))
+                files.forEach(f => migrationFiles.push({ name: f, path: path.join(dir, f) }))
             }
+        }
 
-            const sql = fs.readFileSync(sqlPath, "utf-8")
+        // Sort files by name (e.g. 001, 002, ...)
+        migrationFiles.sort((a, b) => a.name.localeCompare(b.name))
+
+        for (const migration of migrationFiles) {
+            console.log(`\n📄 Running migration: ${migration.name}`)
+            const sql = fs.readFileSync(migration.path, "utf-8")
 
             try {
                 await pool.query(sql)
-                console.log(`✅ ${migrationFile} completed successfully`)
+                console.log(`✅ ${migration.name} completed successfully`)
             } catch (error: any) {
                 // Ignore "already exists" errors
                 if (error.code === '42P07' || error.message.includes('already exists')) {
-                    console.log(`ℹ️  ${migrationFile} - Tables already exist, skipping`)
+                    console.log(`ℹ️  ${migration.name} - Tables already exist, skipping`)
                 } else {
                     throw error
                 }

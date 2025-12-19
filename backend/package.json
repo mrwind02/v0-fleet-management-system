@@ -11,8 +11,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "db:migrate": "node scripts/migrate.js",
-    "db:seed": "node scripts/seed.js",
+    "db:migrate": "ts-node scripts/migrate_postgres.ts",
+    "db:seed": "ts-node scripts/seed_postgres.ts",
     "verify": "node verify-setup.js",
     "setup": "npm install && npm run db:migrate && npm run db:seed && npm run verify"
   },
