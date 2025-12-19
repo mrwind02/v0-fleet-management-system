@@ -71,8 +71,6 @@ export default function QuestionnairePage() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900">Status do Motorista</h1>
-
         <div className="bg-white p-8 rounded-lg shadow">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Bem-vindo, {user?.name}!</h2>

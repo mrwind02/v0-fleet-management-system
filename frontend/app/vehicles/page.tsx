@@ -47,32 +47,45 @@ export default function VehiclesPage() {
   return (
     <MainLayout>
       <div>
-        <div className="flex justify-between items-center" style={{ marginBottom: '3mm' }}>
-          <h1 className="text-3xl font-bold text-gray-900">Veículos</h1>
-          <button
-            onClick={toggleForm}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition"
-          >
-            {showForm ? "Listar" : "Novo Veículo"}
-          </button>
-        </div>
-
-        {showForm ? (
+        {showForm && (
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-bold mb-6 text-gray-800">
               {editingVehicle ? 'Editar Veículo' : 'Novo Veículo'}
             </h2>
             <VehicleForm onSuccess={handleSuccess} initialData={editingVehicle} />
           </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <VehicleList
-              key={refreshKey}
-              onEdit={handleEdit}
-              onAssign={handleAssign}
-            />
-          </div>
         )}
+
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <VehicleList
+            key={refreshKey}
+            onEdit={handleEdit}
+            onAssign={handleAssign}
+          />
+        </div>
+
+        {/* Floating Action Button */}
+        <button
+          onClick={() => {
+            setShowForm(!showForm);
+            if (showForm) { // If form was visible, it's now closing, so clear editingVehicle
+              setEditingVehicle(null);
+            }
+          }}
+          className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 z-50"
+        >
+          {showForm ? (
+            <>
+              <span className="text-xl">✕</span>
+              <span>Cancelar</span>
+            </>
+          ) : (
+            <>
+              <span className="text-xl">+</span>
+              <span>Adicionar Veículo</span>
+            </>
+          )}
+        </button>
 
         {assigningVehicle && (
           <VehicleAssignmentModal

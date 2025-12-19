@@ -21,6 +21,7 @@ export function Header() {
     { href: "/vehicles", label: "Veículos", icon: Truck, roles: ["admin", "manager"] },
     { href: "/drivers", label: "Motoristas", icon: Users, roles: ["admin", "manager"] },
     { href: "/maintenance", label: "Manutenção", icon: Wrench, roles: ["admin", "manager", "driver"] },
+    { href: "/fuel", label: "Abastecimentos", icon: Activity, roles: ["admin", "manager", "driver"] },
     { href: "/questionnaire", label: "Status", icon: Activity, roles: ["driver"] },
     { href: "/reports", label: "Relatórios", icon: FileText, roles: ["admin", "manager"] },
   ]
@@ -33,14 +34,17 @@ export function Header() {
         <div className="flex justify-between items-center h-20">
           {/* Logo Section */}
           <div className="flex-shrink-0 flex items-center gap-3 text-blue-600 w-64 transition-transform hover:scale-105">
-            <div className="bg-blue-50 p-2 rounded-lg">
-              <Truck className="h-8 w-8" />
+            {/* Logo */}
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-50 p-2 rounded-lg">
+                <Truck className="h-7 w-7" />
+              </div>
+              <span className="text-2xl font-bold tracking-tight text-gray-900">FrotaOne</span>
             </div>
-            <span className="text-2xl font-bold tracking-tight text-gray-900">Fleet Manager</span>
           </div>
 
-          {/* Centered Navigation - 10mm spacing approx 40px (gap-10) */}
-          <nav className="hidden md:flex items-center gap-6">
+          {/* Centered Navigation - Reduced spacing to fit all items */}
+          <nav className="hidden md:flex items-center gap-2">
             {filteredItems.map((item) => {
               const isActive = pathname.startsWith(item.href)
               const Icon = item.icon
@@ -49,7 +53,7 @@ export function Header() {
                   key={item.href}
                   href={item.href}
                   className={`
-                       relative flex items-center gap-2 px-9 py-3.5 rounded-full text-base font-medium transition-colors duration-300 z-10
+                       relative flex items-center gap-2 px-5 py-3 rounded-full text-base font-medium transition-colors duration-300 z-10
                        ${isActive
                       ? "text-blue-600"
                       : "text-gray-600 hover:text-gray-900"

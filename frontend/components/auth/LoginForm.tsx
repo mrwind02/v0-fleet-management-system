@@ -26,6 +26,11 @@ export function LoginForm() {
 
     try {
       console.log("[v0] Login attempt with email:", email)
+      console.log("[v0] Email length:", email.length)
+      console.log("[v0] Email trimmed:", email.trim())
+      console.log("[v0] Password length:", password.length)
+      console.log("[v0] Password first 3 chars:", password.substring(0, 3))
+      console.log("[v0] Password last 3 chars:", password.substring(password.length - 3))
       setDebugInfo(`Tentando conectar em ${process.env.NEXT_PUBLIC_API_URL}/auth/login`)
 
       const response = await authService.login(email, password)
@@ -68,7 +73,7 @@ export function LoginForm() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-lg shadow-xl p-8">
-          <h1 className="text-3xl font-bold text-center mb-2 text-gray-900">Fleet Manager</h1>
+          <h1 className="text-3xl font-bold text-center mb-2 text-gray-900">FrotaOne</h1>
           <p className="text-center text-gray-600 mb-6">Gerenciamento de Frota</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">

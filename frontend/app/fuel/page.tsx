@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MainLayout } from "../../frontend/components/layout/MainLayout"
-import { vehicleService, fuelService } from "../../frontend/services/api"
-import { useAuthStore } from "../../frontend/store/authStore"
+import { MainLayout } from "../../components/layout/MainLayout"
+import { vehicleService, fuelService } from "../../services/api"
+import { useAuthStore } from "../../store/authStore"
 import { useForm } from "react-hook-form"
 
 export default function FuelPage() {

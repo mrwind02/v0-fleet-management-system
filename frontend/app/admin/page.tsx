@@ -96,7 +96,6 @@ export default function AdminPage() {
             <div className="space-y-8">
                 <div className="flex items-center gap-3 mb-6">
                     <Shield className="h-8 w-8 text-blue-600" />
-                    <h1 className="text-3xl font-bold text-gray-900">Painel do Administrador</h1>
                 </div>
 
                 {/* Settings Section */}

@@ -5,6 +5,16 @@ import { authenticateToken, authorize } from "../middlewares/auth"
 const router = express.Router()
 const service = new MaintenanceService()
 
+// Get all maintenance records
+router.get("/", authenticateToken, async (req, res) => {
+  try {
+    const records = await service.getAll()
+    res.json({ success: true, data: records })
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message })
+  }
+})
+
 router.post("/", authenticateToken, authorize("admin", "manager", "driver"), async (req, res) => {
   try {
     const {

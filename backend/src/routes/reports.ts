@@ -5,7 +5,7 @@ import { authenticateToken, authorize } from "../middlewares/auth"
 const router = express.Router()
 const service = new ReportService()
 
-router.get("/metrics", authenticateToken, authorize("admin", "manager"), async (req, res) => {
+router.get("/metrics", authenticateToken, authorize("admin", "manager", "driver"), async (req, res) => {
   try {
     const metrics = await service.getDashboardMetrics()
     res.json({ success: true, data: metrics })
@@ -18,6 +18,17 @@ router.get("/recent-maintenance", authenticateToken, authorize("admin", "manager
   try {
     const limit = req.query.limit ? Number(req.query.limit) : 5
     const data = await service.getRecentMaintenance(limit)
+    res.json({ success: true, data })
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message })
+  }
+})
+
+router.get("/recent-activities", authenticateToken, authorize("admin", "manager"), async (req, res) => {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 10
+    const vehicleId = req.query.vehicleId as string | undefined
+    const data = await service.getRecentActivities(limit, vehicleId)
     res.json({ success: true, data })
   } catch (error: any) {
     res.status(400).json({ success: false, error: error.message })

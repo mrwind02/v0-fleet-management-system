@@ -130,21 +130,63 @@ export class ReportService {
     const maintenancesToday = await query(
       "SELECT COUNT(*) FROM maintenance_records WHERE maintenance_date = CURRENT_DATE",
     )
-    const totalKm = await query("SELECT SUM(odometer_reading) FROM maintenance_records")
+    const totalCosts = await query("SELECT SUM(cost) FROM maintenance_records")
 
     return {
       activeVehicles: Number.parseInt((activeVehicles.rows[0] as any).count),
       activeDrivers: Number.parseInt((activeDrivers.rows[0] as any).count),
       maintenancesToday: Number.parseInt((maintenancesToday.rows[0] as any).count),
-      totalKilometers: Number.parseInt((totalKm.rows[0] as any).sum) || 0,
+      totalCosts: Number.parseFloat((totalCosts.rows[0] as any).sum) || 0,
     }
   }
 
+  async getRecentActivities(limit = 10, vehicleId?: string) {
+    let whereClause = vehicleId ? `WHERE v.id = $2` : ``
+    const params = vehicleId ? [limit, vehicleId] : [limit]
+
+    const sql = `
+      SELECT * FROM (
+        SELECT 
+          m.id,
+          m.maintenance_date as date,
+          m.establishment_name as location,
+          m.maintenance_type as type,
+          m.cost,
+          v.plate,
+          'maintenance' as category
+        FROM maintenance_records m
+        LEFT JOIN vehicles v ON m.vehicle_id = v.id
+        ${whereClause}
+        
+        UNION ALL
+        
+        SELECT 
+          f.id,
+          f.fuel_date as date,
+          f.gas_station_name as location,
+          'abastecimento' as type,
+          f.cost,
+          v.plate,
+          'fuel' as category
+        FROM fuel_records f
+        LEFT JOIN vehicles v ON f.vehicle_id = v.id
+        ${whereClause}
+      ) combined
+      ORDER BY date DESC
+      LIMIT $1
+    `
+
+    const result = await query(sql, params)
+    return result.rows
+  }
+
+  // Keep for backward compatibility
   async getRecentMaintenance(limit = 5) {
     const result = await query(
-      `SELECT id, maintenance_date, establishment_name, maintenance_type, cost 
-       FROM maintenance_records 
-       ORDER BY maintenance_date DESC 
+      `SELECT m.id, m.maintenance_date, m.establishment_name, m.maintenance_type, m.cost, v.plate
+       FROM maintenance_records m
+       LEFT JOIN vehicles v ON m.vehicle_id = v.id
+       ORDER BY m.maintenance_date DESC 
        LIMIT $1`,
       [limit],
     )
@@ -166,14 +208,14 @@ export class ReportService {
 
   async exportMaintenanceCSV(vehicleId?: string, startDate?: Date, endDate?: Date): Promise<string> {
     const data = await this.getMaintenanceHistory(vehicleId, startDate, endDate)
-    const headers = ["id", "plate", "model", "maintenance_date", "maintenance_type", "mechanic_name", "establishment_name", "cost"]
+    const headers = ["id", "plate", "model", "maintenance_date", "maintenance_type", "mechanic_name", "establishment_name", "cost", "service_description"]
     return this.generateCSV(data, headers)
   }
 
   async exportMaintenancePDF(vehicleId?: string, startDate?: Date, endDate?: Date, timezone: string = "America/Sao_Paulo"): Promise<Buffer> {
     const data = await this.getMaintenanceHistory(vehicleId, startDate, endDate)
     const PDFDocument = require("pdfkit")
-    const doc = new PDFDocument({ margin: 50 })
+    const doc = new PDFDocument({ margin: 50, size: 'A4', layout: 'landscape' })
     const chunks: Buffer[] = []
 
     return new Promise(async (resolve, reject) => {
@@ -186,15 +228,16 @@ export class ReportService {
         `${item.plate} - ${item.model}`,
         item.maintenance_type,
         item.establishment_name,
-        `R$ ${Number(item.cost).toFixed(2)}`
+        `R$ ${Number(item.cost).toFixed(2)}`,
+        item.service_description || '-'
       ])
 
       await this.drawTable(doc, {
         title: "Relatório de Manutenção",
         subtitle: `Gerado em: ${new Date().toLocaleString("pt-BR")}`,
-        headers: ["Data", "Veículo", "Tipo", "Estabelecimento", "Custo"],
+        headers: ["Data", "Veículo", "Tipo", "Estabelecimento", "Custo", "Observações"],
         rows: formattedRows,
-        widths: [80, 150, 80, 130, 60]
+        widths: [70, 120, 80, 120, 70, 240]
       })
 
       doc.end()
@@ -210,7 +253,7 @@ export class ReportService {
   async exportQuestionnairePDF(startDate: Date, endDate: Date, driverId?: string, timezone: string = "America/Sao_Paulo"): Promise<Buffer> {
     const data = await this.getQuestionnaireReport(startDate, endDate, driverId)
     const PDFDocument = require("pdfkit")
-    const doc = new PDFDocument({ margin: 50 })
+    const doc = new PDFDocument({ margin: 50, size: 'A4', layout: 'landscape' })
     const chunks: Buffer[] = []
 
     return new Promise(async (resolve, reject) => {
@@ -218,20 +261,25 @@ export class ReportService {
       doc.on("end", () => resolve(Buffer.concat(chunks)))
       doc.on("error", reject)
 
-      const formattedRows = data.map(item => [
-        new Date(item.timestamp_response).toLocaleString("pt-BR", { timeZone: timezone }),
-        item.driver_name,
-        item.vehicle_plate || "-",
-        item.status === 'driving' ? 'Rodando' : 'Parado',
-        item.gps_latitude ? `${Number(item.gps_latitude).toFixed(4)}, ${Number(item.gps_longitude).toFixed(4)}` : '-'
-      ])
+      const formattedRows = data.map(item => {
+        const date = new Date(item.timestamp_response)
+        const formattedDateTime = date.toLocaleString("pt-BR", { timeZone: timezone })
+
+        return [
+          formattedDateTime,
+          item.driver_name,
+          item.vehicle_plate || "-",
+          item.status === 'driving' ? 'Rodando' : 'Parado',
+          item.gps_latitude ? `${Number(item.gps_latitude).toFixed(4)}, ${Number(item.gps_longitude).toFixed(4)}` : '-'
+        ]
+      })
 
       await this.drawTable(doc, {
         title: "Relatório de Status",
         subtitle: `Período: ${startDate.toLocaleDateString()} a ${endDate.toLocaleDateString()}`,
         headers: ["Data/Hora", "Motorista", "Veículo", "Status", "GPS"],
         rows: formattedRows,
-        widths: [110, 100, 80, 60, 150]
+        widths: [140, 140, 100, 80, 240]
       })
 
       doc.end()

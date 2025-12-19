@@ -7,7 +7,7 @@ import "./globals.css"
 const geist = Geist({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Fleet Manager - Gerenciamento de Frota",
+  title: "FrotaOne - Gerenciamento de Frota",
   description: "Sistema completo de gerenciamento de frota e manutenção",
 }
 

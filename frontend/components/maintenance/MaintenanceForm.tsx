@@ -29,9 +29,13 @@ export function MaintenanceForm({ vehicleId, onSuccess }: MaintenanceFormProps) 
     setIsLoading(true)
 
     try {
+      // Fix date offset: create date at noon local time to avoid timezone issues
+      const [year, month, day] = data.maintenanceDate.split('-')
+      const localDate = new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0)
+
       await maintenanceService.create({
         vehicleId,
-        maintenanceDate: new Date(data.maintenanceDate),
+        maintenanceDate: localDate,
         maintenanceType: data.maintenanceType,
         mechanicName: data.mechanicName,
         establishmentName: data.establishmentName,
