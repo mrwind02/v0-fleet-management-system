@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { MainLayout } from "../../components/layout/MainLayout"
-import { useAuthStore } from "../../store/authStore"
-import { userService, settingsService } from "../../services/api"
+import { MainLayout } from "../../frontend/components/layout/MainLayout"
+import { useAuthStore } from "../../frontend/store/authStore"
+import { userService, settingsService } from "../../frontend/services/api"
 import { Shield, Users, Trash2, Edit, Save, X, Ban, CheckCircle } from "lucide-react"
 
 export default function AdminPage() {
