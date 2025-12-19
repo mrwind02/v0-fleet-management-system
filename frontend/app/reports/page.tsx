@@ -87,8 +87,7 @@ export default function ReportsPage() {
       const response = await reportService.exportQuestionnaireCSV(
         startDate,
         endDate,
-        selectedDriver || undefined,
-        getTimezone()
+        selectedDriver || undefined
       )
 
       const url = window.URL.createObjectURL(new Blob([response.data]))
@@ -133,9 +132,7 @@ export default function ReportsPage() {
   return (
     <MainLayout>
       <div>
-        <h1 className="text-3xl font-bold text-gray-900" style={{ marginBottom: '3mm' }}>Relatórios</h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Relatório de Manutenção */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-bold mb-4 text-gray-900">Relatório de Manutenção</h2>

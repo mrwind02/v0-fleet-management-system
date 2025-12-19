@@ -82,6 +82,7 @@ export const driverService = {
 
 // Maintenance Services
 export const maintenanceService = {
+  getAll: () => api.get("/maintenance"),
   create: (data: any) => api.post("/maintenance", data),
   getByVehicle: (vehicleId: string, filters?: any) => api.get(`/maintenance/vehicle/${vehicleId}`, { params: filters }),
   getById: (id: string) => api.get(`/maintenance/${id}`),
@@ -100,10 +101,12 @@ export const questionnaireService = {
 export const reportService = {
   getMetrics: () => api.get("/reports/metrics"),
   getRecentMaintenance: (limit?: number) => api.get("/reports/recent-maintenance", { params: { limit } }),
-  exportMaintenanceCSV: (filters?: any) =>
-    api.get("/reports/maintenance/csv", { params: filters, responseType: "blob" }),
-  exportMaintenancePDF: (filters?: any) =>
-    api.get("/reports/maintenance/pdf", { params: filters, responseType: "blob" }),
+  getRecentActivities: (limit?: number, vehicleId?: string) =>
+    api.get("/reports/recent-activities", { params: { limit, vehicleId } }),
+  exportMaintenanceCSV: (params: { vehicleId?: string; startDate?: string; endDate?: string }) =>
+    api.get("/reports/maintenance/csv", { params, responseType: "blob" }),
+  exportMaintenancePDF: (params: { vehicleId?: string; startDate?: string; endDate?: string; timezone?: string }) =>
+    api.get("/reports/maintenance/pdf", { params, responseType: "blob" }),
   exportQuestionnaireCSV: (startDate: string, endDate: string, driverId?: string, timezone?: string) =>
     api.get("/reports/questionnaire/csv", { params: { startDate, endDate, driverId, timezone }, responseType: "blob" }),
   exportQuestionnairePDF: (startDate: string, endDate: string, driverId?: string, timezone?: string) =>
@@ -122,4 +125,14 @@ export const settingsService = {
   getPublic: (key: string) => api.get("/settings/public", { params: { key } }),
   getAll: () => api.get("/settings"),
   update: (key: string, value: string) => api.put(`/settings/${key}`, { value }),
+}
+
+// Fuel Services
+export const fuelService = {
+  getAll: () => api.get("/fuel"),
+  create: (data: any) => api.post("/fuel", data),
+  getByVehicle: (vehicleId: string) => api.get(`/fuel/vehicle/${vehicleId}`),
+  getById: (id: string) => api.get(`/fuel/${id}`),
+  update: (id: string, data: any) => api.put(`/fuel/${id}`, data),
+  delete: (id: string) => api.delete(`/fuel/${id}`),
 }
