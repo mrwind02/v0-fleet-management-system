@@ -1,0 +1,10 @@
+backend
+app
+components
+services
+store
+node_modules
+.next
+*.log
+.env.local
+.DS_Store
