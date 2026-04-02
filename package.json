@@ -57,6 +57,7 @@
     "immer": "latest",
     "input-otp": "1.4.1",
     "jest": "latest",
+    "jose": "6.2.2",
     "jsonwebtoken": "latest",
     "lucide-react": "^0.454.0",
     "morgan": "latest",

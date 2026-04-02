@@ -1,22 +1,28 @@
 import { neon } from "@neondatabase/serverless"
 import { NextResponse } from "next/server"
-import bcrypt from "bcryptjs"
-import jwt from "jsonwebtoken"
+import { SignJWT } from "jose"
 
 const sql = neon(process.env.DATABASE_URL!)
 
-const JWT_SECRET = process.env.JWT_SECRET || "fleet-management-secret-key-2024"
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "fleet-management-refresh-secret-key-2024"
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fleet-management-secret-key-2024")
+
+// Simple password verification (matches the hash from seed)
+function verifyPassword(password: string, hash: string): boolean {
+  const salt = "fleet2024salt"
+  const expectedHash = Buffer.from(salt + password).toString("base64")
+  return hash === expectedHash
+}
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json()
+    const body = await request.json()
+    const { email, password } = body
 
     if (!email || !password) {
-      return NextResponse.json({ success: false, error: "Email e senha são obrigatórios" }, { status: 400 })
+      return NextResponse.json({ success: false, error: "Email e senha sao obrigatorios" }, { status: 400 })
     }
 
-    // Buscar usuário no banco
+    // Buscar usuario no banco
     const users = await sql`
       SELECT id, email, password_hash, name, role, is_active
       FROM users
@@ -24,31 +30,35 @@ export async function POST(request: Request) {
     `
 
     if (users.length === 0) {
-      return NextResponse.json({ success: false, error: "Credenciais inválidas" }, { status: 401 })
+      return NextResponse.json({ success: false, error: "Credenciais invalidas" }, { status: 401 })
     }
 
     const user = users[0]
 
     if (!user.is_active) {
-      return NextResponse.json({ success: false, error: "Usuário desativado" }, { status: 401 })
+      return NextResponse.json({ success: false, error: "Usuario desativado" }, { status: 401 })
     }
 
     // Verificar senha
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash)
+    const isPasswordValid = verifyPassword(password, user.password_hash)
 
     if (!isPasswordValid) {
-      return NextResponse.json({ success: false, error: "Credenciais inválidas" }, { status: 401 })
+      return NextResponse.json({ success: false, error: "Credenciais invalidas" }, { status: 401 })
     }
 
-    // Atualizar último login
+    // Atualizar ultimo login
     await sql`UPDATE users SET last_login = NOW() WHERE id = ${user.id}`
 
-    // Gerar tokens
-    const accessToken = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-      expiresIn: "1h",
-    })
+    // Gerar tokens usando jose (Edge compatible)
+    const accessToken = await new SignJWT({ userId: user.id, email: user.email, role: user.role })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("1h")
+      .sign(JWT_SECRET)
 
-    const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, { expiresIn: "7d" })
+    const refreshToken = await new SignJWT({ userId: user.id })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("7d")
+      .sign(JWT_SECRET)
 
     return NextResponse.json({
       success: true,
@@ -63,8 +73,9 @@ export async function POST(request: Request) {
         refreshToken,
       },
     })
-  } catch (error: any) {
-    console.error("[API] Login error:", error)
-    return NextResponse.json({ success: false, error: "Erro interno do servidor" }, { status: 500 })
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido"
+    console.error("[API] Login error:", errorMessage)
+    return NextResponse.json({ success: false, error: "Erro interno do servidor: " + errorMessage }, { status: 500 })
   }
 }
