@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useLoginDebug } from "../../hooks/useLoginDebug"
+import { useLoginDebug } from "@/hooks/useLoginDebug"
 
 export function LoginDebugPanel() {
   const [showPanel, setShowPanel] = useState(false)
@@ -63,8 +63,9 @@ export function LoginDebugPanel() {
                   results.slice(0, 5).map((result, idx) => (
                     <div
                       key={idx}
-                      className={`p-2 rounded text-xs font-mono border ${result.success ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300"
-                        }`}
+                      className={`p-2 rounded text-xs font-mono border ${
+                        result.success ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300"
+                      }`}
                     >
                       <p className="font-semibold">
                         [{result.status || "???"}] {result.success ? "✓" : "✗"}

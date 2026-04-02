@@ -43,23 +43,9 @@ export class DriverService {
     return result.rows.length > 0 ? this.mapToDriver(result.rows[0]) : null
   }
 
-  async getByUserId(userId: string): Promise<Driver | null> {
-    const result = await query("SELECT * FROM drivers WHERE user_id = $1", [userId])
-    return result.rows.length > 0 ? this.mapToDriver(result.rows[0]) : null
-  }
-
   async getByCNH(cnhNumber: string): Promise<Driver | null> {
     const result = await query("SELECT * FROM drivers WHERE cnh_number = $1", [cnhNumber])
     return result.rows.length > 0 ? this.mapToDriver(result.rows[0]) : null
-  }
-
-  async getByEmail(email: string): Promise<Driver | null> {
-    const result = await query("SELECT * FROM drivers WHERE email = $1", [email])
-    return result.rows.length > 0 ? this.mapToDriver(result.rows[0]) : null
-  }
-
-  async linkToUser(driverId: string, userId: string): Promise<void> {
-    await query("UPDATE drivers SET user_id = $1 WHERE id = $2", [userId, driverId])
   }
 
   async update(id: string, driverData: Partial<Driver>): Promise<Driver> {
@@ -69,7 +55,7 @@ export class DriverService {
 
     Object.entries(driverData).forEach(([key, value]) => {
       const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase()
-      if (!["id", "created_at", "user_id", "updated_at"].includes(snakeKey)) {
+      if (!["id", "created_at", "user_id"].includes(snakeKey)) {
         updates.push(`${snakeKey} = $${paramCount}`)
         values.push(value)
         paramCount++
@@ -103,7 +89,7 @@ export class DriverService {
       [vehicleId, driverId, notes],
     )
 
-    return result.rows[0] as VehicleDriverAssignment
+    return result.rows[0]
   }
 
   async getCurrentVehicle(driverId: string): Promise<any> {
@@ -115,10 +101,6 @@ export class DriverService {
     )
 
     return result.rows.length > 0 ? result.rows[0] : null
-  }
-
-  async delete(id: string): Promise<void> {
-    await query("UPDATE drivers SET is_active = false WHERE id = $1", [id])
   }
 
   private mapToDriver(row: any): Driver {

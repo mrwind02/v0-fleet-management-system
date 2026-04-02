@@ -25,8 +25,6 @@ export interface Vehicle {
   isActive: boolean
   createdAt: Date
   updatedAt: Date
-  driverName?: string
-  driverId?: string
 }
 
 export interface Driver {

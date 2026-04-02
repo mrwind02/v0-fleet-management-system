@@ -3,16 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && npm run dev",
-    "build": "cd frontend && npm install && npm run build",
-    "build:backend": "cd backend && npm install && npm run build",
-    "start": "cd frontend && npm start",
-    "start:backend": "cd backend && npm start",
-    "lint": "cd frontend && npm run lint"
+    "build": "next build",
+    "dev": "next dev",
+    "lint": "eslint .",
+    "start": "next start"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "@neondatabase/serverless": "1.0.2",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
     "@radix-ui/react-aspect-ratio": "1.1.1",
@@ -52,7 +50,6 @@
     "dotenv": "latest",
     "embla-carousel-react": "8.5.1",
     "express": "latest",
-    "framer-motion": "^12.23.26",
     "fs": "latest",
     "helmet": "latest",
     "http": "latest",
@@ -63,7 +60,7 @@
     "jsonwebtoken": "latest",
     "lucide-react": "^0.454.0",
     "morgan": "latest",
-    "next": "^16.1.0",
+    "next": "16.0.3",
     "next-themes": "^0.4.6",
     "node-notifier": "latest",
     "path": "latest",

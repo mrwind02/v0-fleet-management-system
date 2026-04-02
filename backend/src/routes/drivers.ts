@@ -12,7 +12,6 @@ router.put("/:id", authenticateToken, authorize("admin", "manager"), (req, res) 
 router.post("/:driverId/assign-vehicle", authenticateToken, authorize("admin", "manager"), (req, res) =>
   controller.assignToVehicle(req, res),
 )
-router.delete("/:id", authenticateToken, authorize("admin", "manager"), (req, res) => controller.delete(req, res))
 router.get("/:driverId/current-vehicle", authenticateToken, (req, res) => controller.getCurrentVehicle(req, res))
 
 export default router

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useForm } from "react-hook-form"
-import { maintenanceService } from "../../services/api"
+import { maintenanceService } from "@/services/api"
 
 interface MaintenanceFormProps {
   vehicleId: string
@@ -18,30 +18,20 @@ export function MaintenanceForm({ vehicleId, onSuccess }: MaintenanceFormProps) 
     formState: { errors },
   } = useForm()
 
-  const parseFormattedNumber = (value: any) => {
-    if (!value) return undefined
-    const stringValue = String(value).replace(",", ".")
-    return Number.parseFloat(stringValue)
-  }
-
   const onSubmit = async (data: any) => {
     setError("")
     setIsLoading(true)
 
     try {
-      // Fix date offset: create date at noon local time to avoid timezone issues
-      const [year, month, day] = data.maintenanceDate.split('-')
-      const localDate = new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0)
-
       await maintenanceService.create({
         vehicleId,
-        maintenanceDate: localDate,
+        maintenanceDate: new Date(data.maintenanceDate),
         maintenanceType: data.maintenanceType,
         mechanicName: data.mechanicName,
         establishmentName: data.establishmentName,
         serviceDescription: data.serviceDescription,
-        cost: parseFormattedNumber(data.cost),
-        odometerReading: parseFormattedNumber(data.odometerReading),
+        cost: data.cost ? Number.parseFloat(data.cost) : undefined,
+        odometerReading: data.odometerReading ? Number.parseInt(data.odometerReading) : undefined,
       })
       onSuccess?.()
     } catch (err: any) {
@@ -110,8 +100,9 @@ export function MaintenanceForm({ vehicleId, onSuccess }: MaintenanceFormProps) 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Custo (R$)</label>
           <input
-            type="text"
-            placeholder="500,00"
+            type="number"
+            placeholder="500.00"
+            step="0.01"
             {...register("cost")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
@@ -120,8 +111,8 @@ export function MaintenanceForm({ vehicleId, onSuccess }: MaintenanceFormProps) 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Quilometragem</label>
           <input
-            type="text"
-            placeholder="150000,5"
+            type="number"
+            placeholder="150000"
             {...register("odometerReading")}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />

@@ -20,33 +20,25 @@ export class AuthService {
       [email, hashedPassword, name, role],
     )
 
-    return result.rows[0] as User
+    return result.rows[0]
   }
 
   async login(email: string, password: string): Promise<{ user: User; accessToken: string; refreshToken: string }> {
-    let result: any;
-
-    try {
-      result = await query("SELECT * FROM users WHERE email = $1 AND is_active = true", [email])
-    } catch (error) {
-      throw error;
-    }
+    const result = await query("SELECT * FROM users WHERE email = $1 AND is_active = true", [email])
 
     if (result.rows.length === 0) {
       throw new Error("Invalid credentials")
     }
 
-    const user: any = result.rows[0]
-
+    const user = result.rows[0]
     const passwordMatch = await comparePassword(password, user.password_hash)
+
     if (!passwordMatch) {
       throw new Error("Invalid credentials")
     }
 
     // Atualizar último login
-    try {
-      await query("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1", [user.id])
-    } catch (e) { console.error("Could not update last_login") }
+    await query("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1", [user.id])
 
     const accessToken = generateToken({ id: user.id, email: user.email, role: user.role })
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: user.role })
@@ -71,6 +63,6 @@ export class AuthService {
       "SELECT id, email, name, phone, role, is_active, last_login, created_at, updated_at FROM users WHERE id = $1",
       [id],
     )
-    return result.rows.length > 0 ? (result.rows[0] as User) : null
+    return result.rows.length > 0 ? result.rows[0] : null
   }
 }

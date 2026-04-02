@@ -7,11 +7,11 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "your-refresh-secre
 const JWT_REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRY || "7d"
 
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY as any })
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY })
 }
 
 export function generateRefreshToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRY as any })
+  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRY })
 }
 
 export function verifyToken(token: string): JWTPayload | null {

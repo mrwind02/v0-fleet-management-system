@@ -92,31 +92,13 @@ export class DriverController {
   async getCurrentVehicle(req: Request, res: Response) {
     try {
       const { driverId } = req.params
-
-      // Resolve driver ID (could be passed as userId)
-      let resolvedDriverId = driverId;
-      const driverByUserId = await this.driverService.getByUserId(driverId);
-      if (driverByUserId) {
-        resolvedDriverId = driverByUserId.id;
-      }
-
-      const vehicle = await this.driverService.getCurrentVehicle(resolvedDriverId)
+      const vehicle = await this.driverService.getCurrentVehicle(driverId)
 
       if (!vehicle) {
-        // Return null data instead of 404 to allow UI to handle "no vehicle" gracefully
-        return res.json({ success: true, data: null })
+        return res.status(404).json({ success: false, error: "No vehicle assigned" })
       }
 
       res.json({ success: true, data: vehicle })
-    } catch (error: any) {
-      res.status(400).json({ success: false, error: error.message })
-    }
-  }
-  async delete(req: Request, res: Response) {
-    try {
-      const { id } = req.params
-      await this.driverService.delete(id)
-      res.json({ success: true, message: "Driver deleted successfully" })
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message })
     }

@@ -110,4 +110,4 @@ npm install next-image-optimization
 `
 \`\`\`
 
-```json file="" isHidden
+\`\`\`json file="" isHidden
