@@ -1,8 +1,4 @@
 backend
-app
-components
-services
-store
 node_modules
 .next
 *.log
