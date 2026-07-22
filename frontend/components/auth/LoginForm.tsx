@@ -115,7 +115,12 @@ export function LoginForm() {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
+          <div className="mt-6 text-center text-sm text-gray-600 flex flex-col space-y-2">
+            <p>
+              <Link href="/recover" className="text-blue-600 hover:text-blue-800 font-medium">
+                Esqueceu sua senha?
+              </Link>
+            </p>
             <p>
               Não tem uma conta?{" "}
               <Link href="/register" className="text-blue-600 hover:text-blue-800 font-medium">

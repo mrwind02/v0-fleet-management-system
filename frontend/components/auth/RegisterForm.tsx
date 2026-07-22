@@ -127,12 +127,15 @@ export function RegisterForm() {
                         </button>
                     </form>
 
-                    <div className="mt-6 text-center text-sm text-gray-600">
+                    <div className="mt-6 text-center text-sm text-gray-600 flex flex-col space-y-2">
                         <p>
                             Já tem uma conta?{" "}
                             <Link href="/login" className="text-blue-600 hover:text-blue-800 font-medium">
                                 Faça login
                             </Link>
+                        </p>
+                        <p>
+                            Já tem conta, mas <Link href="/recover" className="text-blue-600 hover:text-blue-800 font-medium">esqueceu a senha?</Link>
                         </p>
                     </div>
                 </div>

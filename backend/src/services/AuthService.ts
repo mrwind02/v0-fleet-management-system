@@ -73,4 +73,23 @@ export class AuthService {
     )
     return result.rows.length > 0 ? (result.rows[0] as User) : null
   }
+
+  async recoverAccount(email: string, newPassword: string): Promise<boolean> {
+    // Verificar se usuário existe
+    const existingUser = await query("SELECT id FROM users WHERE email = $1", [email])
+    if (existingUser.rows.length === 0) {
+      throw new Error("Usuário não encontrado com este e-mail.")
+    }
+
+    // Gerar novo hash para a senha
+    const hashedPassword = await hashPassword(newPassword)
+
+    // Atualizar no banco
+    await query("UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE email = $2", [
+      hashedPassword,
+      email,
+    ])
+
+    return true
+  }
 }

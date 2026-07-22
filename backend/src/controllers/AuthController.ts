@@ -67,4 +67,19 @@ export class AuthController {
       res.status(400).json({ success: false, error: error.message })
     }
   }
+
+  async recover(req: Request, res: Response) {
+    try {
+      const { email, newPassword } = req.body
+
+      if (!email || !newPassword) {
+        return res.status(400).json({ success: false, error: "Email and newPassword are required" })
+      }
+
+      await this.authService.recoverAccount(email, newPassword)
+      res.json({ success: true, message: "Senha atualizada com sucesso!" })
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message })
+    }
+  }
 }
