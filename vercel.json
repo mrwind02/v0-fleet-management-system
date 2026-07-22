@@ -1,4 +1,7 @@
 {
+  "buildCommand": "if [ -d \"frontend\" ]; then cd frontend && npm install && npm run build && cd .. && cp -r frontend/.next .next; else npm run build; fi",
+  "installCommand": "if [ -d \"frontend\" ]; then cd frontend && npm install; else npm install; fi",
+  "outputDirectory": ".next",
   "cleanUrls": true,
   "headers": [
     {
