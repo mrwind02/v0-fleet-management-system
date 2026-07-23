@@ -137,3 +137,8 @@ export const fuelService = {
   update: (id: string, data: any) => api.put(`/fuel/${id}`, data),
   delete: (id: string) => api.delete(`/fuel/${id}`),
 }
+
+// Dashboard Services
+export const dashboardService = {
+  getMetrics: () => api.get("/dashboard/metrics")
+}

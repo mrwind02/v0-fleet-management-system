@@ -58,24 +58,21 @@ export default function DriversPage() {
       
       setMetrics(metricsData)
       
-      const mappedDrivers: ExtendedDriver[] = (driversRes.data.data || []).map((d: any, index: number) => {
-        const statuses: ExtendedDriver["status"][] = ["Em Operação", "Disponível", "Férias", "Afastado", "Suspenso"]
-        const status = statuses[index % statuses.length]
-        
+      const mappedDrivers: ExtendedDriver[] = (driversRes.data.data || []).map((d: any) => {
         return {
           id: d.id,
           name: d.name,
-          registration: d.cnh ? d.cnh.substring(0, 6) : `MT-${1000 + index}`,
+          registration: d.cnh ? d.cnh.substring(0, 6) : `N/A`,
           cnhNumber: d.cnh || "N/A",
           cnhCategory: d.cnhCategory || "E",
           
-          currentVehicle: status === "Em Operação" ? `Volvo FH16 - ABC${1000 + index}` : null,
-          unit: index % 3 === 0 ? "Filial - RJ" : "Matriz - SP",
-          status,
-          score: 60 + Math.floor(Math.random() * 40),
-          nextExpiration: new Date(Date.now() + Math.random() * 10000000000).toLocaleDateString('pt-BR'),
-          finesCount: index % 4 === 0 ? Math.floor(Math.random() * 3) + 1 : 0,
-          lastUpdate: new Date(Date.now() - Math.random() * 10000000).toLocaleDateString('pt-BR')
+          currentVehicle: d.isActive ? "Veículo Designado" : null, // From DB later
+          unit: "Matriz - SP",
+          status: d.isActive ? "Em Operação" : "Disponível",
+          score: 100, // Real score calculation later
+          nextExpiration: new Date(d.cnhExpiryDate || Date.now()).toLocaleDateString('pt-BR'),
+          finesCount: 0, // Should come from DB
+          lastUpdate: new Date(d.updatedAt || Date.now()).toLocaleDateString('pt-BR')
         }
       })
       

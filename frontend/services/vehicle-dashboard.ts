@@ -1,4 +1,4 @@
-import { vehicleService } from "./api"
+import { dashboardService } from "./api"
 
 export interface VehicleDashboardMetrics {
   totalVehicles: number
@@ -11,37 +11,24 @@ export interface VehicleDashboardMetrics {
   expiringDocuments: number
 }
 
-/**
- * Camada de abstração para os dados do Dashboard de Veículos.
- * Permite alternar facilmente entre dados mockados locais e uma API real
- * mantendo o contrato estrito esperado pelos componentes.
- */
 export const vehicleDashboardService = {
   getMetrics: async (): Promise<VehicleDashboardMetrics> => {
     try {
-      // Tenta buscar da API real para algumas métricas se possível
-      const response = await vehicleService.getAll()
-      const vehicles = response.data.data || []
-      
-      const totalVehicles = vehicles.length
-      const activeVehicles = vehicles.filter((v: any) => v.isActive).length
-      // Simulando veículos em manutenção (no futuro, v.status === 'maintenance')
-      const maintenanceVehicles = Math.floor(totalVehicles * 0.15)
-      const inactiveVehicles = vehicles.filter((v: any) => !v.isActive).length
+      const response = await dashboardService.getMetrics()
+      const data = response.data
 
       return {
-        totalVehicles,
-        activeVehicles,
-        maintenanceVehicles,
-        inactiveVehicles,
-        averageConsumption: 3.4, // km/l (Mock)
-        fleetAvailability: 92.5, // % (Mock)
-        monthlyCost: 45230.50, // R$ (Mock)
-        expiringDocuments: 8 // qtde (Mock)
+        totalVehicles: data.vehicles.total,
+        activeVehicles: data.vehicles.active,
+        maintenanceVehicles: data.vehicles.maintenance,
+        inactiveVehicles: data.vehicles.inactive,
+        averageConsumption: 3.4, // We would need a fuel integration for this, mock for now or 0
+        fleetAvailability: data.vehicles.total ? Math.round((data.vehicles.active / data.vehicles.total) * 100) : 0,
+        monthlyCost: data.costs.totalMonthly,
+        expiringDocuments: data.documents.expiring
       }
     } catch (error) {
       console.error("Error fetching vehicle dashboard metrics:", error)
-      // Fallback fallback em caso de erro total
       return {
         totalVehicles: 0,
         activeVehicles: 0,

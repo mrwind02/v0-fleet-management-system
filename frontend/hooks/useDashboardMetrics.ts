@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { reportService, vehicleService, driverService } from "@/services/api"
+import { dashboardService, reportService, vehicleService, driverService } from "@/services/api"
 import { useAuthStore } from "@/store/authStore"
 
 export function useDashboardMetrics() {
@@ -18,12 +18,13 @@ export function useDashboardMetrics() {
       try {
         if (user?.role !== "driver") {
           try {
-            const metricsRes = await reportService.getMetrics()
-            setMetrics(metricsRes.data.data || {
-              activeVehicles: 0,
-              activeDrivers: 0,
-              maintenancesToday: 0,
-              totalCosts: 0
+            const metricsRes = await dashboardService.getMetrics()
+            const data = metricsRes.data
+            setMetrics({
+              activeVehicles: data.vehicles.active,
+              activeDrivers: data.drivers.active,
+              maintenancesToday: data.vehicles.maintenance,
+              totalCosts: data.costs.totalMonthly
             })
           } catch (error) {
             console.error("Error fetching metrics:", error)

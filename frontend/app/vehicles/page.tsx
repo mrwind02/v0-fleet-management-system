@@ -59,13 +59,7 @@ export default function VehiclesPage() {
       
       setMetrics(metricsData)
       
-      // Map API data and inject mock values for missing premium features
-      const mappedVehicles: ExtendedVehicle[] = (vehiclesRes.data.data || []).map((v: any, index: number) => {
-        // Deterministic mock generation based on index/id for consistency
-        const isMaint = index % 7 === 0;
-        const isWarningDoc = index % 5 === 0;
-        const isExpiredDoc = index % 12 === 0;
-        
+      const mappedVehicles: ExtendedVehicle[] = (vehiclesRes.data.data || []).map((v: any) => {
         return {
           id: v.id,
           plate: v.plate,
@@ -75,13 +69,13 @@ export default function VehiclesPage() {
           driverName: v.driverName || "Não Atribuído",
           isActive: v.isActive,
           
-          unit: index % 2 === 0 ? "Matriz - SP" : "Filial - RJ",
-          status: isMaint ? "maintenance" : (v.isActive ? "active" : "inactive"),
-          currentOdometer: v.currentOdometer || (45000 + (index * 1234)),
-          nextMaintenance: isMaint ? "Atrasada" : `${(45000 + (index * 1234) + 5000).toLocaleString('pt-BR')} km`,
-          docStatus: isExpiredDoc ? "expired" : (isWarningDoc ? "warning" : "ok"),
-          monthlyCost: 2500 + (Math.random() * 1500),
-          lastUpdate: new Date(Date.now() - Math.random() * 100000000).toLocaleDateString('pt-BR')
+          unit: "Matriz - SP", // Could be from DB later
+          status: v.isActive ? "active" : "inactive",
+          currentOdometer: v.currentOdometer || 0,
+          nextMaintenance: "-", // Could be computed from maintenance records
+          docStatus: "ok", // Could be computed from documents
+          monthlyCost: 0, // Could be from expenses
+          lastUpdate: new Date(v.updatedAt || Date.now()).toLocaleDateString('pt-BR')
         }
       })
       
