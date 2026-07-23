@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { AppLayout } from "@/components/layout/AppLayout"
 import { documentDashboardService, DocumentDashboardMetrics } from "@/services/document-dashboard"
+import { documentService } from "@/services/document.service"
 import { MetricCard } from "@/components/ui/metric-card"
 import { Button } from "@/components/ui/button"
 import { DataTable, TableDensity } from "@/components/ui/data-table"
@@ -54,42 +55,27 @@ export default function DocumentsPage() {
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      const [metricsData, compData, catData] = await Promise.all([
+      const [metricsData, compData, catData, docsData] = await Promise.all([
         documentDashboardService.getMetrics(),
         documentDashboardService.getComplianceData(),
-        documentDashboardService.getCategoryData()
+        documentDashboardService.getCategoryData(),
+        documentService.getDocuments()
       ])
       
       setMetrics(metricsData)
       setComplianceData(compData)
       setCategoryData(catData)
       
-      // Gerando dados mockados para a tabela
-      const mockDocs: MockDocument[] = Array.from({ length: 45 }).map((_, i) => {
-        const statuses: MockDocument["status"][] = ["Válido", "Próximo do Vencimento", "Vencido", "Em Análise", "Pendente"]
-        const categories: MockDocument["category"][] = ["Veículo", "Motorista", "Seguro", "Empresa", "Contrato"]
-        const status = statuses[i % statuses.length]
-        
-        let days = 300
-        if (status === "Vencido") days = - (Math.floor(Math.random() * 30) + 1)
-        else if (status === "Próximo do Vencimento") days = Math.floor(Math.random() * 25) + 1
-        
-        return {
-          id: `doc-${i}`,
-          name: i % 2 === 0 ? "Apólice de Seguro Frota" : "CNH Categoria E",
-          category: categories[i % categories.length],
-          relatedTo: i % 2 === 0 ? "Volvo FH16 (ABC1234)" : "João da Silva",
-          number: `DOC-${10000 + i}`,
-          issueDate: new Date(Date.now() - Math.random() * 10000000000).toLocaleDateString('pt-BR'),
-          expiryDate: new Date(Date.now() + days * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR'),
-          daysRemaining: days,
-          status,
-          responsible: i % 3 === 0 ? "Admin" : "RH",
-          lastUpdate: new Date(Date.now() - Math.random() * 1000000).toLocaleDateString('pt-BR')
-        }
-      })
+      // Formatting documents to match the MockDocument interface expected by the table
+      const formattedDocs = (docsData || []).map((doc: any) => ({
+        ...doc,
+        relatedTo: doc.vehicle_plate ? `Veículo ${doc.vehicle_plate}` : (doc.driver_name ? `Motorista ${doc.driver_name}` : doc.related_to),
+        issueDate: doc.issue_date ? new Date(doc.issue_date).toLocaleDateString('pt-BR') : '-',
+        expiryDate: new Date(doc.expiry_date).toLocaleDateString('pt-BR'),
+        daysRemaining: Math.ceil((new Date(doc.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
+      }))
       
-      setDocuments(mockDocs)
+      setDocuments(formattedDocs)
     } catch (error) {
       console.error(error)
     } finally {

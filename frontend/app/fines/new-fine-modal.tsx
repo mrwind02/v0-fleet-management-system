@@ -18,6 +18,7 @@ import { Autocomplete } from "@/components/ui/autocomplete"
 import { UploadArea } from "@/components/ui/upload-area"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
+import { fineService } from "@/services/fine.service"
 
 const formSchema = z.object({
   autoNumber: z.string().min(1, "Número do Auto é obrigatório"),
@@ -76,11 +77,24 @@ export function NewFineModal({ open, onOpenChange }: NewFineModalProps) {
 
   const onSubmit = async (data: FormValues) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      console.log("Multa salva:", data)
+      await fineService.createFine({
+        auto_number: data.autoNumber,
+        infraction_date: data.date,
+        organ: data.organ,
+        category: data.category,
+        description: data.description,
+        vehicle_id: data.vehicleId,
+        driver_id: data.driverId,
+        value: data.value,
+        points: data.points,
+        due_date: data.dueDate,
+        status: data.status,
+        notes: data.notes
+      })
       toast.success("Multa cadastrada com sucesso!")
       onOpenChange(false)
       form.reset()
+      window.location.reload()
     } catch (error) {
       toast.error("Erro ao salvar multa.")
     }

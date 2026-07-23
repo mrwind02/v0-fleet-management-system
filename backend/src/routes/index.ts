@@ -8,6 +8,8 @@ import fuelRoutes from "./fuel"
 
 import settingsRoutes from "./settings"
 import usersRoutes from "./users"
+import finesRoutes from "./fines"
+import documentsRoutes from "./documents"
 
 export function setupRoutes(app: any) {
   // Health check for monitoring
@@ -24,4 +26,6 @@ export function setupRoutes(app: any) {
   app.use("/api/fuel", fuelRoutes)
   app.use("/api/settings", settingsRoutes)
   app.use("/api/users", usersRoutes)
+  app.use("/api/fines", finesRoutes)
+  app.use("/api/documents", documentsRoutes)
 }

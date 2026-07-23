@@ -19,6 +19,7 @@ import { Autocomplete } from "@/components/ui/autocomplete"
 import { UploadArea } from "@/components/ui/upload-area"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
+import { documentService } from "@/services/document.service"
 
 const formSchema = z.object({
   type: z.string().min(1, "Selecione o tipo do documento"),
@@ -67,12 +68,28 @@ export function NewDocumentModal({ open, onOpenChange }: NewDocumentModalProps) 
 
   const onSubmit = async (data: FormValues) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      console.log("Documento salvo:", data)
+      let vId, dId;
+      if (data.relationType === "veiculo") vId = data.relationId;
+      else if (data.relationType === "motorista") dId = data.relationId;
+
+      await documentService.createDocument({
+        name: data.name,
+        category: data.type,
+        related_to: data.relationId, // Mapeado no backend pra ficar mockado ou pegar nome real
+        number: data.number,
+        issue_date: data.issueDate,
+        expiry_date: data.expirationDate,
+        status: data.status,
+        responsible: data.responsible,
+        notes: data.notes,
+        vehicle_id: vId,
+        driver_id: dId
+      })
       toast.success("Documento cadastrado com sucesso!")
       onOpenChange(false)
       form.reset()
+      // Force page reload to fetch new data (in a real app, use a callback or context)
+      window.location.reload()
     } catch (error) {
       toast.error("Erro ao salvar documento.")
     }

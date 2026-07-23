@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ColumnDef } from "@tanstack/react-table"
 import { NewFineModal } from "./new-fine-modal"
+import { fineService } from "@/services/fine.service"
 import { cn } from "@/utils/utils"
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, YAxis, CartesianGrid, LineChart, Line } from "recharts"
 import { Download, Plus, AlertOctagon, UserX, TrendingDown, Clock } from "lucide-react"
@@ -96,28 +97,31 @@ export default function FinesPage() {
     const savedDensity = localStorage.getItem("fleet:table-density") as TableDensity
     if (savedDensity) setDensity(savedDensity)
     
-    // Mock Data Generation
-    const mockFines: ExtendedFine[] = Array.from({ length: 45 }).map((_, index) => {
-      const statuses: ExtendedFine["status"][] = ["Em Aberto", "Pago", "Em Recurso", "Cancelado", "Vencido"]
-      const categories = ["Velocidade", "Estacionamento", "Sinalização", "Equipamentos", "Documentação"]
-      
-      const status = statuses[index % statuses.length]
-      return {
-        id: `FIN-${1000 + index}`,
-        autoNumber: `AIT-${Math.floor(Math.random() * 1000000)}`,
-        date: new Date(Date.now() - Math.random() * 10000000000).toLocaleDateString('pt-BR'),
-        vehicle: `Scania R450 - ABC${1000 + index}`,
-        driver: `Motorista ${index + 1}`,
-        description: `Infração de trânsito - Art. ${160 + index}`,
-        category: categories[index % categories.length],
-        value: 130.16 + (index * 20.5),
-        points: index % 3 === 0 ? 7 : (index % 2 === 0 ? 5 : 4),
-        status,
-        daysRemaining: status === "Em Aberto" || status === "Em Recurso" ? Math.floor(Math.random() * 30) : null,
-        lastUpdate: new Date(Date.now() - Math.random() * 10000000).toLocaleDateString('pt-BR')
+    const fetchFines = async () => {
+      try {
+        const finesData = await fineService.getFines()
+        
+        const formattedFines: ExtendedFine[] = finesData.map((fine: any) => ({
+          id: fine.id,
+          autoNumber: fine.auto_number,
+          date: fine.infraction_date ? new Date(fine.infraction_date).toLocaleDateString('pt-BR') : '-',
+          vehicle: fine.vehicle_plate ? `Placa ${fine.vehicle_plate}` : '-',
+          driver: fine.driver_name || '-',
+          description: fine.description || '-',
+          category: fine.category,
+          value: Number(fine.value),
+          points: fine.points,
+          status: fine.status === 'aberto' ? 'Em Aberto' : (fine.status === 'pago' ? 'Pago' : 'Em Recurso'),
+          daysRemaining: fine.due_date ? Math.ceil((new Date(fine.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null,
+          lastUpdate: fine.updated_at ? new Date(fine.updated_at).toLocaleDateString('pt-BR') : '-'
+        }))
+        setFines(formattedFines)
+      } catch (error) {
+        console.error("Erro ao buscar multas:", error)
       }
-    })
-    setFines(mockFines)
+    }
+    
+    fetchFines()
   }, [])
 
   const handleDensityChange = (newDensity: TableDensity) => {

@@ -107,6 +107,30 @@ async function seed() {
         )
         console.log("✅ Created maintenance records")
 
+        // Criar multas
+        console.log("📝 Creating fines...")
+        await pool.query(
+            `
+            INSERT INTO fines(auto_number, infraction_date, organ, category, description, vehicle_id, driver_id, value, points, due_date, status) VALUES
+            ('AIT-998877', '2024-05-10', 'DETRAN', 'Velocidade', 'Transitar em velocidade superior à máxima permitida em até 20%', $1, $2, 130.16, 4, '2024-07-10', 'aberto')
+            ON CONFLICT DO NOTHING
+            `,
+            [vehicleIds[0], driverIds[0]]
+        )
+        console.log("✅ Created fines")
+
+        // Criar documentos
+        console.log("📄 Creating documents...")
+        await pool.query(
+            `
+            INSERT INTO documents(name, category, related_to, number, issue_date, expiry_date, status, responsible, vehicle_id) VALUES
+            ('CRLV 2024', 'Veículo', 'Volvo FH16 (ABC1234)', '1234567890', '2024-01-10', '2024-12-31', 'Válido', 'Despachante', $1)
+            ON CONFLICT DO NOTHING
+            `,
+            [vehicleIds[0]]
+        )
+        console.log("✅ Created documents")
+
         console.log("\n✨ PostgreSQL Database seed completed successfully!")
         console.log("\nTest Credentials:")
         console.log("Admin: admin@fleet.com / password123")
