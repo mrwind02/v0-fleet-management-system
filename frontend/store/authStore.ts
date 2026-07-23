@@ -19,9 +19,14 @@ interface AuthStore {
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
-  user: null,
-  accessToken: null,
-  refreshToken: null,
+  user: {
+    id: "dev-mock-id",
+    email: "admin@fleet.com",
+    name: "Administrador (Dev)",
+    role: "admin",
+  },
+  accessToken: "mock-token",
+  refreshToken: "mock-refresh",
   isLoading: false,
 
   login: (accessToken, refreshToken, user) => {

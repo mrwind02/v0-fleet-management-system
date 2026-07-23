@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MainLayout } from "../../components/layout/MainLayout"
+import { AppLayout } from "../../components/layout/AppLayout"
+import { ChevronRight } from "lucide-react"
 import { reportService, vehicleService, driverService } from "../../services/api"
 
 export default function ReportsPage() {
@@ -130,20 +131,27 @@ export default function ReportsPage() {
   }
 
   return (
-    <MainLayout>
-      <div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <AppLayout>
+      <div className="flex flex-col gap-4 pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="flex items-center text-xs font-semibold text-muted-foreground">
+            <span className="text-foreground cursor-pointer hover:underline">Relatórios</span>
+            <ChevronRight className="h-3 w-3 mx-1.5" />
+            <span>Exportar Relatórios</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
           {/* Relatório de Manutenção */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">Relatório de Manutenção</h2>
+          <div className="bg-card border p-6 rounded-lg shadow-sm">
+            <h2 className="text-xl font-bold mb-4 text-foreground">Relatório de Manutenção</h2>
             {/* ... fields ... */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Veículo (Opcional)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">Veículo (Opcional)</label>
                 <select
                   value={selectedVehicle}
                   onChange={(e) => setSelectedVehicle(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Todos os veículos</option>
                   {vehicles.map((v) => (
@@ -155,22 +163,22 @@ export default function ReportsPage() {
               </div>
               {/* Dates and Buttons */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Data Início</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">Data Início</label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Data Fim</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">Data Fim</label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -194,16 +202,16 @@ export default function ReportsPage() {
           </div>
 
           {/* Relatório de Questionário */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">Relatório de Status</h2>
+          <div className="bg-card border p-6 rounded-lg shadow-sm">
+            <h2 className="text-xl font-bold mb-4 text-foreground">Relatório de Status</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Motorista (Opcional)</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">Motorista (Opcional)</label>
                 <select
                   value={selectedDriver}
                   onChange={(e) => setSelectedDriver(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Todos os motoristas</option>
                   {drivers.map((d) => (
@@ -215,22 +223,22 @@ export default function ReportsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Data Início *</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">Data Início *</label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Data Fim *</label>
+                <label className="block text-sm font-medium text-muted-foreground mb-2">Data Fim *</label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -254,6 +262,6 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
-    </MainLayout>
+    </AppLayout>
   )
 }

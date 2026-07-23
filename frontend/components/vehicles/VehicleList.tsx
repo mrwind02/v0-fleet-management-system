@@ -2,7 +2,20 @@
 
 import { useEffect, useState } from "react"
 import { vehicleService } from "../../services/api"
-import { Pencil, Trash2, UserPlus } from "lucide-react"
+import { Pencil, Trash2, UserPlus, MoreVertical } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { cn } from "@/utils/utils"
 
 interface Vehicle {
   id: string
@@ -12,6 +25,7 @@ interface Vehicle {
   year: number
   color?: string
   loadCapacity?: number
+  driverName?: string
 }
 
 interface VehicleListProps {
@@ -51,69 +65,105 @@ export function VehicleList({ onEdit, onAssign }: VehicleListProps) {
     }
   }
 
-  if (isLoading) return <div className="text-center text-gray-600">Carregando...</div>
-  if (error) return <div className="text-center text-red-600">{error}</div>
+  if (isLoading) return <div className="p-8 text-center text-[11px] font-medium text-muted-foreground animate-pulse">Carregando frota...</div>
+  if (error) return <div className="p-8 text-center text-[11px] font-medium text-destructive">{error}</div>
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placa</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marca/Modelo</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ano</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motorista</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacidade</th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {vehicles.map((vehicle) => (
-            <tr key={vehicle.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{vehicle.plate}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{vehicle.brand} {vehicle.model}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{vehicle.year}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                {/* @ts-ignore */}
-                {vehicle.driverName ? (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {/* @ts-ignore */}
-                    {vehicle.driverName}
-                  </span>
-                ) : (
-                  <span className="text-gray-400 italic">Sem motorista</span>
-                )}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{vehicle.loadCapacity} kg</td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div className="flex justify-end items-center gap-3">
-                  <button
-                    onClick={() => onAssign?.(vehicle)}
-                    className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 p-1.5 rounded-md hover:bg-indigo-100 transition-colors"
-                    title="Atribuir Motorista"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => onEdit?.(vehicle)}
-                    className="text-blue-600 hover:text-blue-900 bg-blue-50 p-1.5 rounded-md hover:bg-blue-100 transition-colors"
-                    title="Editar"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(vehicle.id)}
-                    className="text-red-600 hover:text-red-900 bg-red-50 p-1.5 rounded-md hover:bg-red-100 transition-colors"
-                    title="Excluir"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="w-full">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-transparent hover:bg-transparent border-b">
+            <TableHead className="w-[30px] px-3 py-1"><Checkbox className="rounded-[4px] opacity-70" /></TableHead>
+            <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider">Veículo</TableHead>
+            <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider">Placa</TableHead>
+            <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider">Ano</TableHead>
+            <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider">Motorista Atual</TableHead>
+            <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider">Capacidade</TableHead>
+            <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider">Status</TableHead>
+            <TableHead className="w-[30px] py-1 text-right"></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {vehicles.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={8} className="h-24 text-center text-[11px] text-muted-foreground">
+                Nenhum veículo cadastrado.
+              </TableCell>
+            </TableRow>
+          ) : (
+            vehicles.map((vehicle) => (
+              <TableRow key={vehicle.id} className="border-b/50 h-8">
+                <TableCell className="px-3 py-1">
+                  <Checkbox className="rounded-[4px] border-muted-foreground/30" />
+                </TableCell>
+                <TableCell className="py-1">
+                  <div className="flex flex-col whitespace-nowrap">
+                    <span className="font-semibold text-[10px] text-foreground">{vehicle.brand}</span>
+                    <span className="text-[8px] text-muted-foreground">{vehicle.model}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-[10px] font-medium text-foreground py-1 whitespace-nowrap">
+                  {vehicle.plate.toUpperCase()}
+                </TableCell>
+                <TableCell className="text-[10px] text-muted-foreground py-1">
+                  {vehicle.year}
+                </TableCell>
+                <TableCell className="py-1">
+                  {vehicle.driverName ? (
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-[8px] font-bold text-blue-700">
+                        {vehicle.driverName.charAt(0)}
+                      </div>
+                      <span className="text-[10px] text-foreground">{vehicle.driverName}</span>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground italic">Sem motorista</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-[10px] py-1 whitespace-nowrap">
+                  {vehicle.loadCapacity ? `${vehicle.loadCapacity} kg` : '-'}
+                </TableCell>
+                <TableCell className="py-1">
+                  <Badge variant="outline" className={cn(
+                    "border-0 rounded-full text-[8px] px-1.5 py-0 h-3.5 font-semibold whitespace-nowrap",
+                    "text-green-700 bg-green-100" // Simulated Active status
+                  )}>
+                    Ativo
+                  </Badge>
+                </TableCell>
+                <TableCell className="py-1 text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+                        <MoreVertical className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40 text-[11px]">
+                      <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase">Ações do Veículo</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => onAssign?.(vehicle)} className="text-[11px] cursor-pointer">
+                        <UserPlus className="mr-2 h-3 w-3" /> Atribuir Motorista
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onEdit?.(vehicle)} className="text-[11px] cursor-pointer">
+                        <Pencil className="mr-2 h-3 w-3" /> Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleDelete(vehicle.id)} className="text-[11px] text-destructive focus:bg-destructive/10 cursor-pointer">
+                        <Trash2 className="mr-2 h-3 w-3" /> Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+      
+      {/* Pagination footer (mock) */}
+      <div className="p-2 border-t flex items-center justify-between bg-muted/10">
+        <span className="text-[10px] text-muted-foreground px-1">Mostrando {vehicles.length} registros</span>
+      </div>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MainLayout } from "../../components/layout/MainLayout"
+import { AppLayout } from "../../components/layout/AppLayout"
 import { vehicleService, fuelService } from "../../services/api"
 import { useAuthStore } from "../../store/authStore"
 import { useForm } from "react-hook-form"
@@ -79,14 +79,14 @@ export default function FuelPage() {
     }
 
     return (
-        <MainLayout>
-            <div>
-                <div className="bg-white p-5 rounded-lg shadow-sm mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Selecione um Veículo</label>
+        <AppLayout>
+            <div className="flex flex-col gap-4 pb-4">
+                <div className="bg-card border p-5 rounded-lg shadow-sm mb-4">
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">Selecione um Veículo</label>
                     <select
                         value={selectedVehicle}
                         onChange={(e) => setSelectedVehicle(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">-- Selecione um veículo --</option>
                         {vehicles.map((v) => (
@@ -109,74 +109,74 @@ export default function FuelPage() {
                         </div>
 
                         {showForm && (
-                            <div className="bg-white p-6 rounded-lg shadow mb-6">
-                                <h2 className="text-xl font-bold mb-4 text-gray-900">Novo Abastecimento</h2>
-                                {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
+                            <div className="bg-card border p-6 rounded-lg shadow-sm mb-6">
+                                <h2 className="text-xl font-bold mb-4 text-foreground">Novo Abastecimento</h2>
+                                {error && <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded mb-4">{error}</div>}
 
                                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Data *</label>
+                                            <label className="block text-sm font-medium text-muted-foreground mb-1">Data *</label>
                                             <input
                                                 type="date"
                                                 {...register("fuelDate", { required: "Data é obrigatória" })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                                             />
-                                            {errors.fuelDate && <span className="text-red-600 text-sm">{String(errors.fuelDate.message)}</span>}
+                                            {errors.fuelDate && <span className="text-red-500 text-sm">{String(errors.fuelDate.message)}</span>}
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Posto *</label>
+                                            <label className="block text-sm font-medium text-muted-foreground mb-1">Nome do Posto *</label>
                                             <input
                                                 type="text"
                                                 placeholder="Posto Shell"
                                                 {...register("gasStationName", { required: "Nome do posto é obrigatório" })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                                             />
-                                            {errors.gasStationName && <span className="text-red-600 text-sm">{String(errors.gasStationName.message)}</span>}
+                                            {errors.gasStationName && <span className="text-red-500 text-sm">{String(errors.gasStationName.message)}</span>}
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Local</label>
+                                            <label className="block text-sm font-medium text-muted-foreground mb-1">Local</label>
                                             <input
                                                 type="text"
                                                 placeholder="Av. Paulista, 1000"
                                                 {...register("location")}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Kilometragem Atual *</label>
+                                            <label className="block text-sm font-medium text-muted-foreground mb-1">Kilometragem Atual *</label>
                                             <input
                                                 type="text"
                                                 placeholder="150000,5"
                                                 {...register("odometerReading", { required: "Kilometragem é obrigatória" })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                                             />
-                                            {errors.odometerReading && <span className="text-red-600 text-sm">{String(errors.odometerReading.message)}</span>}
+                                            {errors.odometerReading && <span className="text-red-500 text-sm">{String(errors.odometerReading.message)}</span>}
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Litros *</label>
+                                            <label className="block text-sm font-medium text-muted-foreground mb-1">Litros *</label>
                                             <input
                                                 type="text"
                                                 placeholder="45,50"
                                                 {...register("liters", { required: "Litros é obrigatório" })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                                             />
-                                            {errors.liters && <span className="text-red-600 text-sm">{String(errors.liters.message)}</span>}
+                                            {errors.liters && <span className="text-red-500 text-sm">{String(errors.liters.message)}</span>}
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Valor Total *</label>
+                                            <label className="block text-sm font-medium text-muted-foreground mb-1">Valor Total *</label>
                                             <input
                                                 type="text"
                                                 placeholder="250,00"
                                                 {...register("cost", { required: "Valor é obrigatório" })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                className="w-full px-4 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-blue-500"
                                             />
-                                            {errors.cost && <span className="text-red-600 text-sm">{String(errors.cost.message)}</span>}
+                                            {errors.cost && <span className="text-red-500 text-sm">{String(errors.cost.message)}</span>}
                                         </div>
                                     </div>
 
@@ -191,38 +191,38 @@ export default function FuelPage() {
                             </div>
                         )}
 
-                        <div className="bg-white p-6 rounded-lg shadow">
-                            <h2 className="text-xl font-bold mb-4 text-gray-900">Histórico de Abastecimentos</h2>
+                        <div className="bg-card border p-6 rounded-lg shadow-sm">
+                            <h2 className="text-xl font-bold mb-4 text-foreground">Histórico de Abastecimentos</h2>
                             {fuelRecords.length === 0 ? (
-                                <p className="text-gray-600">Nenhum abastecimento registrado.</p>
+                                <p className="text-muted-foreground">Nenhum abastecimento registrado.</p>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
-                                        <thead className="bg-gray-100 border-b border-gray-200">
+                                        <thead className="bg-muted/50 border-b border-border">
                                             <tr>
-                                                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Data</th>
-                                                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Posto</th>
-                                                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Local</th>
-                                                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">KM</th>
-                                                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Litros</th>
-                                                <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Valor</th>
+                                                <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Data</th>
+                                                <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Posto</th>
+                                                <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Local</th>
+                                                <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">KM</th>
+                                                <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Litros</th>
+                                                <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Valor</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-200">
+                                        <tbody className="divide-y divide-border">
                                             {fuelRecords.map((record) => (
-                                                <tr key={record.id} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4 text-sm text-gray-600">
+                                                <tr key={record.id} className="hover:bg-muted/30 transition-colors">
+                                                    <td className="px-6 py-4 text-sm text-muted-foreground">
                                                         {new Date(record.fuelDate).toLocaleDateString("pt-BR")}
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-600">{record.gasStationName}</td>
-                                                    <td className="px-6 py-4 text-sm text-gray-600">{record.location || "-"}</td>
-                                                    <td className="px-6 py-4 text-sm text-gray-600">
+                                                    <td className="px-6 py-4 text-sm text-muted-foreground">{record.gasStationName}</td>
+                                                    <td className="px-6 py-4 text-sm text-muted-foreground">{record.location || "-"}</td>
+                                                    <td className="px-6 py-4 text-sm text-muted-foreground">
                                                         {Number(record.odometerReading).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 3 })}
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-600">
+                                                    <td className="px-6 py-4 text-sm text-muted-foreground">
                                                         {Number(record.liters).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-600">
+                                                    <td className="px-6 py-4 text-sm text-muted-foreground">
                                                         R$ {Number(record.cost).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </td>
                                                 </tr>
@@ -235,6 +235,6 @@ export default function FuelPage() {
                     </>
                 )}
             </div>
-        </MainLayout>
+        </AppLayout>
     )
 }

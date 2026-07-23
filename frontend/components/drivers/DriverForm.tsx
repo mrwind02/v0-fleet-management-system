@@ -39,17 +39,17 @@ export function DriverForm({ onSuccess, initialData }: DriverFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
           <input
             type="text"
             placeholder="João Silva"
             {...register("name", { required: "Nome é obrigatório" })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
           {errors.name && <span className="text-red-600 text-sm">{String(errors.name.message)}</span>}
         </div>
@@ -60,7 +60,7 @@ export function DriverForm({ onSuccess, initialData }: DriverFormProps) {
             type="text"
             placeholder="12345678901"
             {...register("cnhNumber", { required: "CNH é obrigatória" })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
           {errors.cnhNumber && <span className="text-red-600 text-sm">{String(errors.cnhNumber.message)}</span>}
         </div>
@@ -69,7 +69,7 @@ export function DriverForm({ onSuccess, initialData }: DriverFormProps) {
           <label className="block text-sm font-medium text-gray-700 mb-1">Categoria da CNH *</label>
           <select
             {...register("cnhCategory", { required: "Categoria é obrigatória" })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Selecione uma categoria</option>
             <option value="A">A</option>
@@ -87,7 +87,7 @@ export function DriverForm({ onSuccess, initialData }: DriverFormProps) {
           <input
             type="date"
             {...register("cnhExpiryDate", { required: "Validade é obrigatória" })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
           {errors.cnhExpiryDate && <span className="text-red-600 text-sm">{String(errors.cnhExpiryDate.message)}</span>}
         </div>
@@ -98,7 +98,7 @@ export function DriverForm({ onSuccess, initialData }: DriverFormProps) {
             type="tel"
             placeholder="11999999999"
             {...register("phone")}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -108,7 +108,7 @@ export function DriverForm({ onSuccess, initialData }: DriverFormProps) {
             type="email"
             placeholder="joao@email.com"
             {...register("email")}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -137,13 +137,15 @@ export function DriverForm({ onSuccess, initialData }: DriverFormProps) {
         </label>
       </div>
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition"
-      >
-        {isLoading ? "Salvando..." : initialData ? "Atualizar" : "Criar Motorista"}
-      </button>
+      <div className="pt-2 flex justify-end">
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-2 px-6 text-sm rounded-lg shadow-lg shadow-blue-500/30 transition-all active:scale-95"
+        >
+          {isLoading ? "Salvando..." : initialData ? "Atualizar Motorista" : "Criar Motorista"}
+        </button>
+      </div>
     </form>
   )
 }

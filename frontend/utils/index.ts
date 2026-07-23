@@ -7,3 +7,4 @@ export {
   ROLE_LABELS,
   MAINTENANCE_TYPE_LABELS,
 } from "./constants"
+export { cn } from "./utils"

@@ -65,7 +65,7 @@ async function seed() {
             INSERT INTO drivers(user_id, name, cnh_number, cnh_category, cnh_expiry_date, phone, email, special_load_certified) VALUES
             ($1, 'João Silva', 'CNH001', 'D', '2026-12-31', '11999999999', 'joao@email.com', true),
             ($2, 'Maria Santos', 'CNH002', 'E', '2025-06-30', '11988888888', 'maria@email.com', false)
-            ON CONFLICT (email) DO NOTHING
+            ON CONFLICT (cnh_number) DO NOTHING
             RETURNING id;
             `,
             [userIds[2], userIds[3]],

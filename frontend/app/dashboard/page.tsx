@@ -1,245 +1,473 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { MainLayout } from "../../components/layout/MainLayout"
-import { reportService, vehicleService } from "../../services/api"
-import { useAuthStore } from "../../store/authStore"
+import * as React from "react"
+import { AppLayout } from "@/components/layout/AppLayout"
+import { MetricCard } from "@/components/ui/metric-card"
+import { ChartCard } from "@/components/ui/chart-card"
+import { Car, User, Wrench, DollarSign, Clock, ChevronRight, Calendar, Settings2, MoreVertical } from "lucide-react"
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from "recharts"
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+
+import { useDashboardMetrics } from "@/hooks/useDashboardMetrics"
+import { cn } from "@/utils/utils"
+
+// --- Mock Data ---
+const sparklineBlue = [{ value: 10 }, { value: 15 }, { value: 12 }, { value: 20 }, { value: 18 }, { value: 25 }, { value: 22 }]
+const sparklinePurple = [{ value: 20 }, { value: 18 }, { value: 25 }, { value: 22 }, { value: 30 }, { value: 28 }, { value: 35 }]
+const sparklineOrange = [{ value: 5 }, { value: 8 }, { value: 12 }, { value: 10 }, { value: 15 }, { value: 18 }, { value: 23 }]
+const sparklineGreen = [{ value: 40 }, { value: 38 }, { value: 45 }, { value: 42 }, { value: 50 }, { value: 48 }, { value: 55 }]
+
+const monthlyCostsData = [
+  { name: "Jan", atual: 15000 },
+  { name: "Fev", atual: 30000 },
+  { name: "Mar", atual: 25000 },
+  { name: "Abr", atual: 45000 },
+  { name: "Mai", atual: 28000 },
+  { name: "Jun", atual: 40000 },
+  { name: "Jul", atual: 30000 },
+  { name: "Ago", atual: 42000 },
+  { name: "Set", atual: 35000 },
+  { name: "Out", atual: 48000 },
+  { name: "Nov", atual: 32000 },
+  { name: "Dez", atual: 30000 },
+]
+
+const categoryData = [
+  { name: "Abastecimento", value: 20245.80, percent: "47,7%", color: "#0052FF" },
+  { name: "Manutenção", value: 12650.40, percent: "29,8%", color: "#10B981" },
+  { name: "Pneus", value: 4210.00, percent: "9,9%", color: "#F59E0B" },
+  { name: "Seguros", value: 3180.00, percent: "7,5%", color: "#8B5CF6" },
+  { name: "Outros", value: 2149.30, percent: "5,1%", color: "#64748B" },
+]
+const COLORS = categoryData.map(c => c.color)
+
+const recentEntries = [
+  { id: 1, date: "17/12/2025", vehicle: "PQF3C53", model: "Scania R 450", driver: "João Silva", type: "Abastecimento", place: "Posto Casagranda", city: "Caxias do Sul - RS", value: "R$ 685,42", status: "Pago" },
+  { id: 2, date: "16/12/2025", vehicle: "PQF3C53", model: "Scania R 450", driver: "João Silva", type: "Manutenção", place: "Oficina Mecânica Sul", city: "Caxias do Sul - RS", value: "R$ 1.250,00", status: "Pago" },
+  { id: 3, date: "16/12/2025", vehicle: "QWE9D12", model: "Volvo FH 540", driver: "Carlos Andrade", type: "Abastecimento", place: "Posto Capuá", city: "Caxias do Sul - RS", value: "R$ 410,50", status: "Pago" },
+  { id: 4, date: "15/12/2025", vehicle: "ASD7F34", model: "Mercedes Actros", driver: "Marcos Lima", type: "Preventiva", place: "FrotaOne Oficina", city: "Caxias do Sul - RS", value: "R$ 2.410,00", status: "Agendada" },
+  { id: 5, date: "15/12/2025", vehicle: "QWE9D12", model: "Volvo FH 540", driver: "Carlos Andrade", type: "Pneu", place: "Borracharia do Zé", city: "Caxias do Sul - RS", value: "R$ 980,00", status: "Pago" },
+]
 
 export default function DashboardPage() {
-  const [metrics, setMetrics] = useState<any>(null)
-  const [recentActivities, setRecentActivities] = useState<any[]>([])
-  const [vehicles, setVehicles] = useState<any[]>([])
-  const [selectedVehicle, setSelectedVehicle] = useState<string>("")
-  const [isLoading, setIsLoading] = useState(true)
-  const user = useAuthStore((state) => state.user)
+  const { isLoading, user, metrics, recentActivities, vehicles, drivers } = useDashboardMetrics()
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (user?.role !== "driver") {
-          try {
-            const metricsRes = await reportService.getMetrics()
-            setMetrics(metricsRes.data.data || {
-              activeVehicles: 0,
-              activeDrivers: 0,
-              maintenancesToday: 0,
-              totalCosts: 0
-            })
-          } catch (error) {
-            console.error("Error fetching metrics:", error)
-            setMetrics({
-              activeVehicles: 0,
-              activeDrivers: 0,
-              maintenancesToday: 0,
-              totalCosts: 0
-            })
-          }
-
-          try {
-            const vehiclesRes = await vehicleService.getAll(true)
-            setVehicles(vehiclesRes.data.data || [])
-          } catch (error) {
-            console.error("Error fetching vehicles:", error)
-          }
+  const generateAlerts = () => {
+    const alerts = [];
+    const today = new Date();
+    
+    if (drivers && drivers.length > 0) {
+      let expiredCount = 0;
+      let expiringCount = 0;
+      
+      drivers.forEach((d: any) => {
+        if (!d.cnhExpiryDate) return;
+        const expiry = new Date(d.cnhExpiryDate);
+        const diffTime = expiry.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 0) {
+          expiredCount++;
+        } else if (diffDays <= 30) {
+          expiringCount++;
         }
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error)
-      } finally {
-        setIsLoading(false)
+      });
+      
+      if (expiredCount > 0) {
+        alerts.push({ title: "CNH Vencida", desc: `${expiredCount} motorista(s) com CNH vencida`, color: "bg-red-500", dot: "!" });
+      }
+      if (expiringCount > 0) {
+        alerts.push({ title: "CNH Vencendo", desc: `${expiringCount} motorista(s) com CNH vencendo em 30 dias`, color: "bg-orange-500", dot: "!" });
       }
     }
 
-    fetchData()
-  }, [user])
-
-  // Fetch recent activities when vehicle filter changes
-  useEffect(() => {
-    const fetchActivities = async () => {
-      if (user?.role !== "driver") {
-        try {
-          const activitiesRes = await reportService.getRecentActivities(10, selectedVehicle || undefined)
-          setRecentActivities(activitiesRes.data.data || [])
-        } catch (error) {
-          console.error("Error fetching recent activities:", error)
-          setRecentActivities([])
-        }
+    if (vehicles && vehicles.length > 0) {
+      let maintenanceCount = 0;
+      let inactiveCount = 0;
+      
+      vehicles.forEach((v: any) => {
+        if (v.status === 'maintenance') maintenanceCount++;
+        if (v.status === 'inactive') inactiveCount++;
+      });
+      
+      if (maintenanceCount > 0) {
+        alerts.push({ title: "Veículos em Manutenção", desc: `${maintenanceCount} veículo(s) em manutenção`, color: "bg-orange-500", dot: "!" });
+      }
+      if (inactiveCount > 0) {
+        alerts.push({ title: "Veículos Inativos", desc: `${inactiveCount} veículo(s) inativo(s)`, color: "bg-red-500", dot: "!" });
       }
     }
-    fetchActivities()
-  }, [selectedVehicle, user])
+    
+    if (alerts.length === 0) {
+      alerts.push({ title: "Tudo certo!", desc: "Nenhum alerta crítico no momento.", color: "bg-green-500", dot: "✓" });
+    }
 
+    return alerts.slice(0, 5);
+  }
+
+  const dynamicAlerts = generateAlerts();
+
+  const displayActivities = recentActivities && recentActivities.length > 0 ? recentActivities.map((act: any) => ({
+    id: act.id,
+    date: new Date(act.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }),
+    vehicle: act.plate || "-",
+    model: "-",
+    driver: "-",
+    type: act.type === 'abastecimento' ? 'Abastecimento' : 'Manutenção',
+    place: act.location || "-",
+    city: "-",
+    value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(act.cost || 0),
+    status: 'Concluído'
+  })) : recentEntries;
+  
   return (
-    <MainLayout>
-      <div>
-        {user?.role !== "driver" && (
-          <>
-            {isLoading ? (
-              <div className="text-center text-gray-600 py-20 bg-white rounded-xl shadow-sm">Carregando métricas...</div>
-            ) : metrics ? (
-              <div className="space-y-6">
-                {/* Metrics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-slate-100 flex flex-col justify-between min-h-[200px]" style={{ padding: '5mm' }}>
-                    <div>
-                      <h3 className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1">Veículos Ativos</h3>
-                      <p className="text-5xl font-black text-blue-600 mt-4 tracking-tight">{metrics.activeVehicles}</p>
-                    </div>
-                    <div className="mt-4 flex items-center text-sm text-green-600 font-medium bg-green-50 w-fit px-2 py-1 rounded-full">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                      Em operação
+    <AppLayout>
+      <div className="flex flex-col gap-4 pb-4">
+        
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="flex items-center text-xs font-semibold text-muted-foreground">
+            <span className="text-foreground">Dashboard</span>
+            <ChevronRight className="h-3 w-3 mx-1.5" />
+            <span>Frota</span>
+            <ChevronRight className="h-3 w-3 mx-1.5" />
+            <span>Visão Geral</span>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto h-8 text-xs">
+              + Novo Lançamento <ChevronRight className="h-3 w-3 ml-1 rotate-90" />
+            </Button>
+            <Button variant="outline" className="w-full sm:w-auto h-8 text-xs">
+              <Calendar className="mr-2 h-3 w-3" />
+              01/12/2025 - 17/12/2025
+              <Settings2 className="ml-2 h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Row 1: KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <MetricCard
+            title="Veículos Ativos"
+            value={metrics?.activeVehicles?.toString() || "0"}
+            trend={8.5}
+            trendLabel="vs mês anterior"
+            icon={<Car className="h-5 w-5" />}
+            iconBgColor="bg-blue-100 dark:bg-blue-900/30"
+            iconColor="text-blue-600 dark:text-blue-400"
+            sparklineData={sparklineBlue}
+            sparklineColor="#0052FF"
+          />
+          <MetricCard
+            title="Motoristas Ativos"
+            value={metrics?.activeDrivers?.toString() || "0"}
+            trend={4.2}
+            trendLabel="vs mês anterior"
+            icon={<User className="h-5 w-5" />}
+            iconBgColor="bg-purple-100 dark:bg-purple-900/30"
+            iconColor="text-purple-600 dark:text-purple-400"
+            sparklineData={sparklinePurple}
+            sparklineColor="#8B5CF6"
+          />
+          <MetricCard
+            title="Manutenções Hoje"
+            value={metrics?.maintenancesToday?.toString() || "0"}
+            trend={15.0}
+            trendLabel="vs mês anterior"
+            icon={<Wrench className="h-5 w-5" />}
+            iconBgColor="bg-orange-100 dark:bg-orange-900/30"
+            iconColor="text-orange-600 dark:text-orange-400"
+            sparklineData={sparklineOrange}
+            sparklineColor="#F59E0B"
+          />
+          <MetricCard
+            title="Gastos Totais"
+            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(metrics?.totalCosts || 0)}
+            trend={12.4}
+            trendLabel="vs mês anterior"
+            icon={<DollarSign className="h-5 w-5" />}
+            iconBgColor="bg-green-100 dark:bg-green-900/30"
+            iconColor="text-green-600 dark:text-green-400"
+            sparklineData={sparklineGreen}
+            sparklineColor="#10B981"
+          />
+          <MetricCard
+            title="Disponibilidade da Frota"
+            value="92,1%"
+            trend={3.7}
+            trendLabel="vs mês anterior"
+            icon={<Clock className="h-5 w-5" />}
+            iconBgColor="bg-blue-100 dark:bg-blue-900/30"
+            iconColor="text-blue-600 dark:text-blue-400"
+            sparklineData={sparklineBlue}
+            sparklineColor="#0052FF"
+          />
+        </div>
+
+        {/* Main Content (Charts, Table, Feeds) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          
+          {/* Left Column (Charts & Table) */}
+          <div className="lg:col-span-2 flex flex-col gap-4 h-full">
+            
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Chart 1 */}
+              <ChartCard 
+                title="Gastos nos Últimos 12 Meses" 
+                action={
+                  <Button variant="outline" size="sm" className="h-7 text-xs px-2">
+                    Todos os tipos <ChevronRight className="h-3 w-3 ml-1 rotate-90" />
+                  </Button>
+                }
+              >
+                <div className="h-[180px] w-full mt-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={monthlyCostsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorAtual2" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#0052FF" stopOpacity={0.2}/>
+                          <stop offset="95%" stopColor="#0052FF" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} tickFormatter={(val) => `R$${val/1000}k`} />
+                      <RechartsTooltip 
+                        contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Area type="monotone" dataKey="atual" stroke="#0052FF" strokeWidth={2.5} fillOpacity={1} fill="url(#colorAtual2)" activeDot={{ r: 4, fill: "#0052FF", stroke: "#fff", strokeWidth: 2 }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </ChartCard>
+
+              {/* Chart 2 */}
+              <ChartCard 
+                title="Gastos por Categoria (Mês)" 
+              >
+                <div className="h-[180px] w-full mt-1 flex items-center">
+                  <div className="w-[55%] h-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={categoryData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={45}
+                          outerRadius={65}
+                          paddingAngle={2}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {categoryData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip 
+                          contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)' }}
+                          itemStyle={{ color: 'var(--color-foreground)' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    {/* Center text in donut */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-xs text-muted-foreground">Total</span>
+                      <span className="text-sm font-bold">R$ 42.435,50</span>
                     </div>
                   </div>
-
-                  <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-slate-100 flex flex-col justify-between min-h-[200px]" style={{ padding: '5mm' }}>
-                    <div>
-                      <h3 className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1">Motoristas Ativos</h3>
-                      <p className="text-5xl font-black text-indigo-600 mt-4 tracking-tight">{metrics.activeDrivers}</p>
-                    </div>
-                    <div className="mt-4 flex items-center text-sm text-indigo-600 font-medium bg-indigo-50 w-fit px-2 py-1 rounded-full">
-                      <span className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>
-                      Registrados
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-slate-100 flex flex-col justify-between min-h-[200px]" style={{ padding: '5mm' }}>
-                    <div>
-                      <h3 className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1">Manutenções Hoje</h3>
-                      <p className="text-5xl font-black text-orange-500 mt-4 tracking-tight">{metrics.maintenancesToday}</p>
-                    </div>
-                    <div className="mt-4 flex items-center text-sm text-orange-600 font-medium bg-orange-50 w-fit px-2 py-1 rounded-full">
-                      <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-                      Agendadas
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-slate-100 flex flex-col justify-between min-h-[200px]" style={{ padding: '5mm' }}>
-                    <div>
-                      <h3 className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1">Gastos Totais</h3>
-                      <p className="text-5xl font-black text-purple-600 mt-4 tracking-tight">
-                        R$ {(metrics.totalCosts / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k
-                      </p>
-                    </div>
-                    <div className="mt-4 flex items-center text-sm text-purple-600 font-medium bg-purple-50 w-fit px-2 py-1 rounded-full">
-                      <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-                      Em manutenções
-                    </div>
+                  <div className="w-[45%] flex flex-col justify-center gap-3">
+                    {categoryData.map((cat, idx) => (
+                      <div key={idx} className="flex flex-col">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                          <span className="text-xs font-semibold leading-none">{cat.name}</span>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground ml-4.5 pl-4">
+                          R$ {cat.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ({cat.percent})
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Bottom Section: 70/30 Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
-                  {/* Left Column (70%) - Recent Activities */}
-                  <div className="lg:col-span-7 bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
-                    <div className="p-6 border-b border-gray-100">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-bold text-gray-800">Últimos Lançamentos</h3>
-                      </div>
-                      {/* Vehicle Filter */}
-                      <select
-                        value={selectedVehicle}
-                        onChange={(e) => setSelectedVehicle(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                      >
-                        <option value="">Todos os veículos</option>
-                        {vehicles.map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.plate} - {v.brand} {v.model}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Veículo</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Local</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          {recentActivities.length > 0 ? (
-                            recentActivities.map((item: any) => (
-                              <tr key={`${item.category}-${item.id}`} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                  {new Date(item.date).toLocaleDateString('pt-BR')}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                  {item.plate || '-'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span
-                                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${item.category === 'fuel'
-                                      ? 'bg-yellow-100 text-yellow-800'
-                                      : item.type === 'preventiva'
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-red-100 text-red-800'
-                                      }`}
-                                  >
-                                    {item.type}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-600">{item.location}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
-                                  {item.cost ? `R$ ${Number(item.cost).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={5} className="px-6 py-8 text-center text-gray-500 italic">
-                                Nenhum lançamento recente registrado.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Right Column (30%) - Status/Info */}
-                  <div className="lg:col-span-3 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-lg text-white p-6 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold mb-2">Frota Segura</h3>
-                      <p className="text-blue-100 text-sm mb-6">
-                        Mantenha as manutenções preventivas em dia para garantir a segurança dos motoristas e reduzir custos operacionais.
-                      </p>
-
-                      <div className="space-y-4">
-                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                          <p className="text-xs text-blue-200 uppercase tracking-wider font-semibold">Próxima Revisão Geral</p>
-                          <p className="text-lg font-bold mt-1">15/12/2025</p>
-                        </div>
-
-                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                          <p className="text-xs text-blue-200 uppercase tracking-wider font-semibold">Eficiência da Frota</p>
-                          <p className="text-lg font-bold mt-1">98.5%</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button className="w-full mt-6 bg-white text-blue-600 font-bold py-3 rounded-xl hover:bg-blue-50 transition-colors shadow-lg">
-                      Gerar Relatório Completo
-                    </button>
-                  </div>
-                </div >
-              </div >
-            ) : null
-            }
-          </>
-        )}
-
-        {
-          user?.role === "driver" && (
-            <div className="bg-white p-8 rounded-lg shadow">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Bem-vindo, {user.name}!</h2>
-              <p className="text-gray-600 mb-6">Utilize o menu lateral para acessar suas funções de motorista.</p>
+              </ChartCard>
             </div>
-          )
-        }
-      </div >
-    </MainLayout >
+
+            {/* Latest Entries Table */}
+            <div className="bg-card border rounded-xl shadow-sm overflow-hidden flex flex-col flex-1 justify-between">
+              <div>
+                <div className="p-3 border-b flex justify-between items-center">
+                  <h3 className="font-semibold text-sm">Últimos Lançamentos</h3>
+                  <Button variant="link" size="sm" className="text-blue-600 font-semibold px-0 h-6 text-xs">Ver todos</Button>
+                </div>
+                <div className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-transparent hover:bg-transparent border-b">
+                      <TableHead className="w-[30px] px-3 py-1"><Checkbox className="rounded-[4px] opacity-70" /></TableHead>
+                      <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider">Data</TableHead>
+                      <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider">Veículo</TableHead>
+                      <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider">Motorista</TableHead>
+                      <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider">Tipo</TableHead>
+                      <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider">Local</TableHead>
+                      <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider text-right">Valor</TableHead>
+                      <TableHead className="text-[9px] py-1 font-semibold text-muted-foreground uppercase tracking-wider">Status</TableHead>
+                      <TableHead className="w-[30px] py-1"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {displayActivities.map((entry) => (
+                      <TableRow key={entry.id} className="border-b/50 h-8">
+                        <TableCell className="px-3 py-1"><Checkbox className="rounded-[4px] border-muted-foreground/30" /></TableCell>
+                        <TableCell className="text-[10px] font-medium text-muted-foreground py-1 whitespace-nowrap">{entry.date}</TableCell>
+                        <TableCell className="py-1">
+                          <div className="flex flex-col whitespace-nowrap">
+                            <span className="font-semibold text-[10px]">{entry.vehicle}</span>
+                            <span className="text-[8px] text-muted-foreground">{entry.model}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-[10px] py-1">{entry.driver}</TableCell>
+                        <TableCell className="py-1">
+                          <Badge variant="outline" className={cn(
+                            "border-0 rounded-full font-semibold text-[8px] px-1.5 py-0 h-3.5 whitespace-nowrap",
+                            entry.type === 'Abastecimento' && "text-green-700 bg-green-100",
+                            entry.type === 'Manutenção' && "text-blue-700 bg-blue-100",
+                            entry.type === 'Preventiva' && "text-orange-700 bg-orange-100",
+                            entry.type === 'Pneu' && "text-purple-700 bg-purple-100"
+                          )}>
+                            {entry.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-1">
+                          <div className="flex flex-col whitespace-nowrap">
+                            <span className="text-[10px]">{entry.place}</span>
+                            <span className="text-[8px] text-muted-foreground">{entry.city}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right text-[10px] py-1 font-semibold whitespace-nowrap">{entry.value}</TableCell>
+                        <TableCell className="py-1">
+                          <Badge variant="outline" className={cn(
+                            "border-0 rounded-full text-[8px] px-1.5 py-0 h-3.5 font-medium whitespace-nowrap",
+                            entry.status === 'Pago' ? "text-green-700 bg-green-100" : "text-orange-700 bg-orange-100"
+                          )}>
+                            {entry.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-1">
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+                            <MoreVertical className="h-3 w-3" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              </div>
+              
+              {/* Pagination footer */}
+              <div className="p-3 border-t flex items-center justify-between bg-muted/20 mt-auto">
+                <span className="text-[11px] text-muted-foreground">Mostrando 1 a 5 de 50 registros</span>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="icon" className="h-6 w-6 text-muted-foreground rounded-md"><ChevronRight className="h-3 w-3 rotate-180" /></Button>
+                  <Button variant="default" size="icon" className="h-6 w-6 rounded-md bg-blue-600 text-xs">1</Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md text-xs">2</Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md text-xs">3</Button>
+                  <span className="px-1 text-muted-foreground text-xs">...</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md text-xs">10</Button>
+                  <Button variant="outline" size="icon" className="h-6 w-6 text-muted-foreground rounded-md"><ChevronRight className="h-3 w-3" /></Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column (Operational Feeds - Maintenances & Alerts) */}
+          <div className="lg:col-span-1 flex flex-col gap-4 h-full">
+            
+            {/* Alertas Importantes */}
+            <div className="bg-card border rounded-xl shadow-sm p-3 flex flex-col flex-1 justify-between">
+              <div>
+                <div className="flex justify-between items-start mb-2 min-h-7">
+                  <h3 className="font-semibold text-sm leading-none">Alertas Importantes</h3>
+                </div>
+                <div className="space-y-2.5">
+                {dynamicAlerts.map((alert, i) => (
+                  <div key={i} className="flex flex-col">
+                    <div className="flex items-center gap-2 cursor-pointer group pb-2">
+                      <div className={cn("w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-white text-[10px] font-bold", alert.color)}>
+                        {alert.dot}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-[13px] truncate">{alert.title}</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 pr-1">{alert.desc}</p>
+                      </div>
+                      <ChevronRight className="h-3 w-3 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity shrink-0" />
+                    </div>
+                    {i !== dynamicAlerts.length - 1 && <div className="h-px bg-border/50 ml-7 mb-2.5" />}
+                  </div>
+                ))}
+              </div>
+              </div>
+              <div className="mt-2 text-center pt-2">
+                <Button variant="link" className="text-blue-600 font-semibold text-[11px] h-5">Ver todos os alertas</Button>
+              </div>
+            </div>
+
+            {/* Próximas Manutenções */}
+            <div className="bg-card border rounded-xl shadow-sm p-3 flex flex-col justify-between shrink-0">
+              <div>
+                <div className="flex justify-between items-start mb-2 min-h-7">
+                  <h3 className="font-semibold text-sm leading-none">Próximas Manutenções</h3>
+                  <Button variant="link" size="sm" className="text-blue-600 font-semibold px-0 h-5 text-[11px]">Ver todas</Button>
+                </div>
+                <div className="space-y-2">
+                {[
+                  { day: "18", month: "DEZ", vehicle: "PQF3C53 • Scania R 450", desc: "Troca de óleo do motor", metric: "5.000 km", time: "ou 10 dias" },
+                  { day: "20", month: "DEZ", vehicle: "QWE9D12 • Volvo FH 540", desc: "Revisão preventiva", metric: "8.000 km", time: "ou 13 dias" },
+                  { day: "22", month: "DEZ", vehicle: "ASD7F34 • Mercedes Actros", desc: "Sistema de freios", metric: "3.000 km", time: "ou 15 dias" },
+                ].map((m, i) => (
+                  <div key={i} className="flex flex-col">
+                     <div className="flex items-start gap-2 pb-1.5">
+                      <div className="flex flex-col items-center justify-center min-w-[1.75rem] shrink-0">
+                        <span className="text-base font-black leading-none">{m.day}</span>
+                        <span className="text-[8px] font-bold text-muted-foreground tracking-widest mt-0.5">{m.month}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-[11px] truncate leading-tight">{m.vehicle}</p>
+                        <p className="text-[9px] text-muted-foreground truncate">{m.desc}</p>
+                      </div>
+                      <div className="flex flex-col items-end text-right shrink-0">
+                        <span className="text-[10px] font-semibold">{m.metric}</span>
+                        <span className="text-[8px] text-muted-foreground">{m.time}</span>
+                      </div>
+                    </div>
+                    {i !== 2 && <div className="h-px bg-border/50 ml-9 mb-1.5" />}
+                  </div>
+                ))}
+              </div>
+              </div>
+              <div className="mt-2 text-center pt-2">
+                <Button variant="link" className="text-blue-600 font-semibold text-[11px] h-5">Ver todas manutenções</Button>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    </AppLayout>
   )
 }
