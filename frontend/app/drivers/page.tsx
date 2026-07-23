@@ -218,42 +218,7 @@ export default function DriversPage() {
 
         {/* Reduced Clutter: MetricCards removed */}
 
-        {/* Insight Cards (Executive Row) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-2 mt-2">
-          <InsightCard 
-            title="Prioridade" 
-            value="12 Motoristas" 
-            description="Curso MOPP vencendo em 30 dias" 
-            icon={<GraduationCap className="h-4 w-4" />}
-            iconBgColor="bg-orange-100 dark:bg-orange-900/40"
-            iconColor="text-orange-600 dark:text-orange-400"
-            badgeText="Atenção"
-            badgeVariant="warning"
-            actionLabel="Verificar vencimentos"
-          />
-          <InsightCard 
-            title="Desempenho" 
-            value="+14%" 
-            description="Aumento de produtividade geral" 
-            icon={<TrendingUp className="h-4 w-4" />}
-            iconBgColor="bg-green-100 dark:bg-green-900/40"
-            iconColor="text-green-600 dark:text-green-400"
-            badgeText="Excelente"
-            badgeVariant="success"
-            actionLabel="Ver relatório completo"
-          />
-          <InsightCard 
-            title="Operação" 
-            value="15 Condutores" 
-            description="Disponíveis para alocação" 
-            icon={<UserCheck className="h-4 w-4" />}
-            iconBgColor="bg-blue-100 dark:bg-blue-900/40"
-            iconColor="text-blue-600 dark:text-blue-400"
-            badgeText="Info"
-            badgeVariant="default"
-            actionLabel="Alocar motoristas"
-          />
-        </div>
+        {/* Reduced Clutter: InsightCards removed as they were mock data */}
 
         <div className="mt-2">
 

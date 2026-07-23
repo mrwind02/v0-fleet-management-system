@@ -25,43 +25,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics"
 import { cn } from "@/utils/utils"
 
-// --- Mock Data ---
-const sparklineBlue = [{ value: 10 }, { value: 15 }, { value: 12 }, { value: 20 }, { value: 18 }, { value: 25 }, { value: 22 }]
-const sparklinePurple = [{ value: 20 }, { value: 18 }, { value: 25 }, { value: 22 }, { value: 30 }, { value: 28 }, { value: 35 }]
-const sparklineOrange = [{ value: 5 }, { value: 8 }, { value: 12 }, { value: 10 }, { value: 15 }, { value: 18 }, { value: 23 }]
-const sparklineGreen = [{ value: 40 }, { value: 38 }, { value: 45 }, { value: 42 }, { value: 50 }, { value: 48 }, { value: 55 }]
-
-const monthlyCostsData = [
-  { name: "Jan", atual: 15000 },
-  { name: "Fev", atual: 30000 },
-  { name: "Mar", atual: 25000 },
-  { name: "Abr", atual: 45000 },
-  { name: "Mai", atual: 28000 },
-  { name: "Jun", atual: 40000 },
-  { name: "Jul", atual: 30000 },
-  { name: "Ago", atual: 42000 },
-  { name: "Set", atual: 35000 },
-  { name: "Out", atual: 48000 },
-  { name: "Nov", atual: 32000 },
-  { name: "Dez", atual: 30000 },
-]
-
-const categoryData = [
-  { name: "Abastecimento", value: 20245.80, percent: "47,7%", color: "#0052FF" },
-  { name: "Manutenção", value: 12650.40, percent: "29,8%", color: "#10B981" },
-  { name: "Pneus", value: 4210.00, percent: "9,9%", color: "#F59E0B" },
-  { name: "Seguros", value: 3180.00, percent: "7,5%", color: "#8B5CF6" },
-  { name: "Outros", value: 2149.30, percent: "5,1%", color: "#64748B" },
-]
-const COLORS = categoryData.map(c => c.color)
-
-const recentEntries = [
-  { id: 1, date: "17/12/2025", vehicle: "PQF3C53", model: "Scania R 450", driver: "João Silva", type: "Abastecimento", place: "Posto Casagranda", city: "Caxias do Sul - RS", value: "R$ 685,42", status: "Pago" },
-  { id: 2, date: "16/12/2025", vehicle: "PQF3C53", model: "Scania R 450", driver: "João Silva", type: "Manutenção", place: "Oficina Mecânica Sul", city: "Caxias do Sul - RS", value: "R$ 1.250,00", status: "Pago" },
-  { id: 3, date: "16/12/2025", vehicle: "QWE9D12", model: "Volvo FH 540", driver: "Carlos Andrade", type: "Abastecimento", place: "Posto Capuá", city: "Caxias do Sul - RS", value: "R$ 410,50", status: "Pago" },
-  { id: 4, date: "15/12/2025", vehicle: "ASD7F34", model: "Mercedes Actros", driver: "Marcos Lima", type: "Preventiva", place: "FrotaOne Oficina", city: "Caxias do Sul - RS", value: "R$ 2.410,00", status: "Agendada" },
-  { id: 5, date: "15/12/2025", vehicle: "QWE9D12", model: "Volvo FH 540", driver: "Carlos Andrade", type: "Pneu", place: "Borracharia do Zé", city: "Caxias do Sul - RS", value: "R$ 980,00", status: "Pago" },
-]
+// --- Mocks removed for production ---
+const COLORS = ["#0052FF", "#10B981", "#F59E0B", "#8B5CF6", "#64748B"]
 
 export default function DashboardPage() {
   const { isLoading, user, metrics, recentActivities, vehicles, drivers } = useDashboardMetrics()
@@ -132,7 +97,7 @@ export default function DashboardPage() {
     city: "-",
     value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(act.cost || 0),
     status: 'Concluído'
-  })) : recentEntries;
+  })) : [];
   
   return (
     <AppLayout>
@@ -164,56 +129,56 @@ export default function DashboardPage() {
           <MetricCard
             title="Veículos Ativos"
             value={metrics?.activeVehicles?.toString() || "0"}
-            trend={8.5}
+            trend={0}
             trendLabel="vs mês anterior"
             icon={<Car className="h-5 w-5" />}
             iconBgColor="bg-blue-100 dark:bg-blue-900/30"
             iconColor="text-blue-600 dark:text-blue-400"
-            sparklineData={sparklineBlue}
+            sparklineData={[]}
             sparklineColor="#0052FF"
           />
           <MetricCard
             title="Motoristas Ativos"
             value={metrics?.activeDrivers?.toString() || "0"}
-            trend={4.2}
+            trend={0}
             trendLabel="vs mês anterior"
             icon={<User className="h-5 w-5" />}
             iconBgColor="bg-purple-100 dark:bg-purple-900/30"
             iconColor="text-purple-600 dark:text-purple-400"
-            sparklineData={sparklinePurple}
+            sparklineData={[]}
             sparklineColor="#8B5CF6"
           />
           <MetricCard
             title="Manutenções Hoje"
             value={metrics?.maintenancesToday?.toString() || "0"}
-            trend={15.0}
+            trend={0}
             trendLabel="vs mês anterior"
             icon={<Wrench className="h-5 w-5" />}
             iconBgColor="bg-orange-100 dark:bg-orange-900/30"
             iconColor="text-orange-600 dark:text-orange-400"
-            sparklineData={sparklineOrange}
+            sparklineData={[]}
             sparklineColor="#F59E0B"
           />
           <MetricCard
             title="Gastos Totais"
             value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(metrics?.totalCosts || 0)}
-            trend={12.4}
+            trend={0}
             trendLabel="vs mês anterior"
             icon={<DollarSign className="h-5 w-5" />}
             iconBgColor="bg-green-100 dark:bg-green-900/30"
             iconColor="text-green-600 dark:text-green-400"
-            sparklineData={sparklineGreen}
+            sparklineData={[]}
             sparklineColor="#10B981"
           />
           <MetricCard
             title="Disponibilidade da Frota"
-            value="92,1%"
-            trend={3.7}
+            value="100%"
+            trend={0}
             trendLabel="vs mês anterior"
             icon={<Clock className="h-5 w-5" />}
             iconBgColor="bg-blue-100 dark:bg-blue-900/30"
             iconColor="text-blue-600 dark:text-blue-400"
-            sparklineData={sparklineBlue}
+            sparklineData={[]}
             sparklineColor="#0052FF"
           />
         </div>
@@ -235,24 +200,8 @@ export default function DashboardPage() {
                   </Button>
                 }
               >
-                <div className="h-[180px] w-full mt-1">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={monthlyCostsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="colorAtual2" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#0052FF" stopOpacity={0.2}/>
-                          <stop offset="95%" stopColor="#0052FF" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} tickFormatter={(val) => `R$${val/1000}k`} />
-                      <RechartsTooltip 
-                        contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                      />
-                      <Area type="monotone" dataKey="atual" stroke="#0052FF" strokeWidth={2.5} fillOpacity={1} fill="url(#colorAtual2)" activeDot={{ r: 4, fill: "#0052FF", stroke: "#fff", strokeWidth: 2 }} />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                <div className="h-[180px] w-full mt-1 flex items-center justify-center">
+                  <span className="text-sm text-muted-foreground">Sem dados suficientes</span>
                 </div>
               </ChartCard>
 
@@ -260,49 +209,8 @@ export default function DashboardPage() {
               <ChartCard 
                 title="Gastos por Categoria (Mês)" 
               >
-                <div className="h-[180px] w-full mt-1 flex items-center">
-                  <div className="w-[55%] h-full relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={categoryData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={45}
-                          outerRadius={65}
-                          paddingAngle={2}
-                          dataKey="value"
-                          stroke="none"
-                        >
-                          {categoryData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip 
-                          contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)' }}
-                          itemStyle={{ color: 'var(--color-foreground)' }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    {/* Center text in donut */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-xs text-muted-foreground">Total</span>
-                      <span className="text-sm font-bold">R$ 42.435,50</span>
-                    </div>
-                  </div>
-                  <div className="w-[45%] flex flex-col justify-center gap-3">
-                    {categoryData.map((cat, idx) => (
-                      <div key={idx} className="flex flex-col">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                          <span className="text-xs font-semibold leading-none">{cat.name}</span>
-                        </div>
-                        <span className="text-[11px] text-muted-foreground ml-4.5 pl-4">
-                          R$ {cat.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ({cat.percent})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="h-[180px] w-full mt-1 flex items-center justify-center">
+                  <span className="text-sm text-muted-foreground">Sem lançamentos no período</span>
                 </div>
               </ChartCard>
             </div>
@@ -330,50 +238,58 @@ export default function DashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {displayActivities.map((entry) => (
-                      <TableRow key={entry.id} className="border-b/50 h-8">
-                        <TableCell className="px-3 py-1"><Checkbox className="rounded-[4px] border-muted-foreground/30" /></TableCell>
-                        <TableCell className="text-[10px] font-medium text-muted-foreground py-1 whitespace-nowrap">{entry.date}</TableCell>
-                        <TableCell className="py-1">
-                          <div className="flex flex-col whitespace-nowrap">
-                            <span className="font-semibold text-[10px]">{entry.vehicle}</span>
-                            <span className="text-[8px] text-muted-foreground">{entry.model}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-[10px] py-1">{entry.driver}</TableCell>
-                        <TableCell className="py-1">
-                          <Badge variant="outline" className={cn(
-                            "border-0 rounded-full font-semibold text-[8px] px-1.5 py-0 h-3.5 whitespace-nowrap",
-                            entry.type === 'Abastecimento' && "text-green-700 bg-green-100",
-                            entry.type === 'Manutenção' && "text-blue-700 bg-blue-100",
-                            entry.type === 'Preventiva' && "text-orange-700 bg-orange-100",
-                            entry.type === 'Pneu' && "text-purple-700 bg-purple-100"
-                          )}>
-                            {entry.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-1">
-                          <div className="flex flex-col whitespace-nowrap">
-                            <span className="text-[10px]">{entry.place}</span>
-                            <span className="text-[8px] text-muted-foreground">{entry.city}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right text-[10px] py-1 font-semibold whitespace-nowrap">{entry.value}</TableCell>
-                        <TableCell className="py-1">
-                          <Badge variant="outline" className={cn(
-                            "border-0 rounded-full text-[8px] px-1.5 py-0 h-3.5 font-medium whitespace-nowrap",
-                            entry.status === 'Pago' ? "text-green-700 bg-green-100" : "text-orange-700 bg-orange-100"
-                          )}>
-                            {entry.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-1">
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
-                            <MoreVertical className="h-3 w-3" />
-                          </Button>
+                    {displayActivities.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-6 text-sm text-muted-foreground">
+                          Nenhum lançamento recente
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      displayActivities.map((entry: any) => (
+                        <TableRow key={entry.id} className="border-b/50 h-8">
+                          <TableCell className="px-3 py-1"><Checkbox className="rounded-[4px] border-muted-foreground/30" /></TableCell>
+                          <TableCell className="text-[10px] font-medium text-muted-foreground py-1 whitespace-nowrap">{entry.date}</TableCell>
+                          <TableCell className="py-1">
+                            <div className="flex flex-col whitespace-nowrap">
+                              <span className="font-semibold text-[10px]">{entry.vehicle}</span>
+                              <span className="text-[8px] text-muted-foreground">{entry.model}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-[10px] py-1">{entry.driver}</TableCell>
+                          <TableCell className="py-1">
+                            <Badge variant="outline" className={cn(
+                              "border-0 rounded-full font-semibold text-[8px] px-1.5 py-0 h-3.5 whitespace-nowrap",
+                              entry.type === 'Abastecimento' && "text-green-700 bg-green-100",
+                              entry.type === 'Manutenção' && "text-blue-700 bg-blue-100",
+                              entry.type === 'Preventiva' && "text-orange-700 bg-orange-100",
+                              entry.type === 'Pneu' && "text-purple-700 bg-purple-100"
+                            )}>
+                              {entry.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <div className="flex flex-col whitespace-nowrap">
+                              <span className="text-[10px]">{entry.place}</span>
+                              <span className="text-[8px] text-muted-foreground">{entry.city}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right text-[10px] py-1 font-semibold whitespace-nowrap">{entry.value}</TableCell>
+                          <TableCell className="py-1">
+                            <Badge variant="outline" className={cn(
+                              "border-0 rounded-full text-[8px] px-1.5 py-0 h-3.5 font-medium whitespace-nowrap",
+                              entry.status === 'Pago' ? "text-green-700 bg-green-100" : "text-orange-700 bg-orange-100"
+                            )}>
+                              {entry.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+                              <MoreVertical className="h-3 w-3" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -435,29 +351,10 @@ export default function DashboardPage() {
                   <Button variant="link" size="sm" className="text-blue-600 font-semibold px-0 h-5 text-[11px]">Ver todas</Button>
                 </div>
                 <div className="space-y-2">
-                {[
-                  { day: "18", month: "DEZ", vehicle: "PQF3C53 • Scania R 450", desc: "Troca de óleo do motor", metric: "5.000 km", time: "ou 10 dias" },
-                  { day: "20", month: "DEZ", vehicle: "QWE9D12 • Volvo FH 540", desc: "Revisão preventiva", metric: "8.000 km", time: "ou 13 dias" },
-                  { day: "22", month: "DEZ", vehicle: "ASD7F34 • Mercedes Actros", desc: "Sistema de freios", metric: "3.000 km", time: "ou 15 dias" },
-                ].map((m, i) => (
-                  <div key={i} className="flex flex-col">
-                     <div className="flex items-start gap-2 pb-1.5">
-                      <div className="flex flex-col items-center justify-center min-w-[1.75rem] shrink-0">
-                        <span className="text-base font-black leading-none">{m.day}</span>
-                        <span className="text-[8px] font-bold text-muted-foreground tracking-widest mt-0.5">{m.month}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-[11px] truncate leading-tight">{m.vehicle}</p>
-                        <p className="text-[9px] text-muted-foreground truncate">{m.desc}</p>
-                      </div>
-                      <div className="flex flex-col items-end text-right shrink-0">
-                        <span className="text-[10px] font-semibold">{m.metric}</span>
-                        <span className="text-[8px] text-muted-foreground">{m.time}</span>
-                      </div>
-                    </div>
-                    {i !== 2 && <div className="h-px bg-border/50 ml-9 mb-1.5" />}
-                  </div>
-                ))}
+                {/* Sem Manutenções Agendadas */}
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  Nenhuma manutenção agendada
+                </div>
               </div>
               </div>
               <div className="mt-2 text-center pt-2">
