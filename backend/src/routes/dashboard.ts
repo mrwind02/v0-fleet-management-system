@@ -14,9 +14,10 @@ router.get('/metrics', async (req, res) => {
     const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
 
-    const vResult = await pool.query('SELECT COUNT(*) as total, SUM(CASE WHEN is_active THEN 1 ELSE 0 END) as active FROM vehicles');
+    const vResult = await pool.query('SELECT COUNT(*) as total, SUM(CASE WHEN is_active THEN 1 ELSE 0 END) as active, SUM(CASE WHEN status = \\'manutencao\\' THEN 1 ELSE 0 END) as maintenance FROM vehicles');
     const totalVehicles = parseInt(vResult.rows[0].total) || 0;
     const activeVehicles = parseInt(vResult.rows[0].active) || 0;
+    const maintenanceVehicles = parseInt(vResult.rows[0].maintenance) || 0;
     
     const dResult = await pool.query('SELECT COUNT(*) as total, SUM(CASE WHEN is_active THEN 1 ELSE 0 END) as active FROM drivers');
     const totalDrivers = parseInt(dResult.rows[0].total) || 0;
@@ -93,7 +94,7 @@ router.get('/metrics', async (req, res) => {
     const costsByCategory = costsByCategoryResult.rows.map(r => ({ name: r.category, value: parseFloat(r.value) || 0 }));
 
     res.json({
-      vehicles: { total: totalVehicles, active: activeVehicles, maintenance: 0, inactive: totalVehicles - activeVehicles },
+      vehicles: { total: totalVehicles, active: activeVehicles, maintenance: maintenanceVehicles, inactive: totalVehicles - activeVehicles },
       drivers: { total: totalDrivers, active: activeDrivers, onRoute: 0, inactive: totalDrivers - activeDrivers },
       fines: { pendingValue: pendingFinesValue },
       documents: { expiring: expiringDocuments },

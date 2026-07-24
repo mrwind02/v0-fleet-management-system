@@ -331,11 +331,11 @@ router.patch('/:id/status', async (req, res) => {
     if (current.rows.length === 0) return res.status(404).json({ error: 'Work order not found' });
 
     const oldStatus = current.rows[0].status;
-    const closedAt = status === 'Concluída' ? 'NOW()' : 'closed_at';
+    const closedAtQueryPart = status === 'Concluída' || status === 'Cancelada' ? 'closed_at = NOW()' : 'closed_at = closed_at';
 
     const result = await client.query(`
       UPDATE work_orders
-      SET status = $1, closed_at = ${closedAt}, updated_at = NOW()
+      SET status = $1, ${closedAtQueryPart}, updated_at = NOW()
       WHERE id = $2 RETURNING *
     `, [status, id]);
 
@@ -344,9 +344,20 @@ router.patch('/:id/status', async (req, res) => {
       VALUES ($1, 'status_change', $2, $3, $4, $5)
     `, [id, `Status alterado de "${oldStatus}" para "${status}"`, oldStatus, status, user_name || 'Sistema']);
 
-    // Auto update vehicle status back if completed/canceled
-    if (result.rows[0].vehicle_id && (status === 'Concluída' || status === 'Cancelada')) {
-      await client.query(`UPDATE vehicles SET status = 'operando' WHERE id = $1`, [result.rows[0].vehicle_id]);
+    // Auto update vehicle status
+    if (result.rows[0].vehicle_id) {
+      if (status === 'Concluída' || status === 'Cancelada') {
+        const otherOS = await client.query(\`
+          SELECT id FROM work_orders 
+          WHERE vehicle_id = $1 AND status NOT IN ('Concluída', 'Cancelada') AND id != $2 LIMIT 1
+        \`, [result.rows[0].vehicle_id, id]);
+        
+        if (otherOS.rows.length === 0) {
+          await client.query(\`UPDATE vehicles SET status = 'operando' WHERE id = $1\`, [result.rows[0].vehicle_id]);
+        }
+      } else {
+        await client.query(\`UPDATE vehicles SET status = 'manutencao' WHERE id = $1\`, [result.rows[0].vehicle_id]);
+      }
     }
 
     await client.query('COMMIT');
