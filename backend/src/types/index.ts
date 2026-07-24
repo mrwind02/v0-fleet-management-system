@@ -10,6 +10,13 @@ export interface User {
   updatedAt: Date
 }
 
+export interface Unit {
+  id: string
+  name: string
+  createdAt: Date
+  updatedAt: Date
+}
+
 export interface Vehicle {
   id: string
   plate: string
@@ -22,6 +29,9 @@ export interface Vehicle {
   chassisNumber: string
   loadCapacity?: number
   observations?: string
+  unitId?: string
+  unitName?: string
+  status?: "operando" | "manutencao" | "oficina" | "inativo" | "vendido"
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -40,6 +50,7 @@ export interface Driver {
   email?: string
   specialLoadCertified: boolean
   photoUrl?: string
+  admissionDate?: Date
   isActive: boolean
   createdAt: Date
   updatedAt: Date

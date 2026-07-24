@@ -8,7 +8,7 @@ const ReportService_1 = require("../services/ReportService");
 const auth_1 = require("../middlewares/auth");
 const router = express_1.default.Router();
 const service = new ReportService_1.ReportService();
-router.get("/metrics", auth_1.authenticateToken, (0, auth_1.authorize)("admin", "manager"), async (req, res) => {
+router.get("/metrics", auth_1.authenticateToken, (0, auth_1.authorize)("admin", "manager", "driver"), async (req, res) => {
     try {
         const metrics = await service.getDashboardMetrics();
         res.json({ success: true, data: metrics });
@@ -22,6 +22,44 @@ router.get("/recent-maintenance", auth_1.authenticateToken, (0, auth_1.authorize
         const limit = req.query.limit ? Number(req.query.limit) : 5;
         const data = await service.getRecentMaintenance(limit);
         res.json({ success: true, data });
+    }
+    catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+    }
+});
+router.get("/recent-activities", auth_1.authenticateToken, (0, auth_1.authorize)("admin", "manager"), async (req, res) => {
+    try {
+        const limit = req.query.limit ? Number(req.query.limit) : 10;
+        const vehicleId = req.query.vehicleId;
+        const data = await service.getRecentActivities(limit, vehicleId);
+        res.json({ success: true, data });
+    }
+    catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+    }
+});
+router.get("/maintenance/pdf", auth_1.authenticateToken, (0, auth_1.authorize)("admin", "manager"), async (req, res) => {
+    try {
+        const { vehicleId, startDate, endDate, timezone } = req.query;
+        const pdfBuffer = await service.exportMaintenancePDF(vehicleId, startDate ? new Date(startDate) : undefined, endDate ? new Date(endDate) : undefined, timezone);
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", 'attachment; filename="maintenance-report.pdf"');
+        res.send(pdfBuffer);
+    }
+    catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+    }
+});
+router.get("/questionnaire/pdf", auth_1.authenticateToken, (0, auth_1.authorize)("admin", "manager"), async (req, res) => {
+    try {
+        const { startDate, endDate, driverId, timezone } = req.query;
+        if (!startDate || !endDate) {
+            return res.status(400).json({ success: false, error: "startDate and endDate are required" });
+        }
+        const pdfBuffer = await service.exportQuestionnairePDF(new Date(startDate), new Date(endDate), driverId, timezone);
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", 'attachment; filename="questionnaire-report.pdf"');
+        res.send(pdfBuffer);
     }
     catch (error) {
         res.status(400).json({ success: false, error: error.message });
@@ -41,11 +79,11 @@ router.get("/maintenance/csv", auth_1.authenticateToken, (0, auth_1.authorize)("
 });
 router.get("/questionnaire/csv", auth_1.authenticateToken, (0, auth_1.authorize)("admin", "manager"), async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
+        const { startDate, endDate, driverId } = req.query;
         if (!startDate || !endDate) {
             return res.status(400).json({ success: false, error: "startDate and endDate are required" });
         }
-        const csv = await service.exportQuestionnaireCSV(new Date(startDate), new Date(endDate));
+        const csv = await service.exportQuestionnaireCSV(new Date(startDate), new Date(endDate), driverId);
         res.setHeader("Content-Type", "text/csv");
         res.setHeader("Content-Disposition", 'attachment; filename="questionnaire-report.csv"');
         res.send(csv);

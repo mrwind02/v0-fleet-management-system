@@ -25,7 +25,7 @@ type ExtendedVehicle = {
   
   // Mocked fields for premium corporate feel
   unit: string
-  status: "active" | "maintenance" | "inactive"
+  status: "operando" | "manutencao" | "oficina" | "inativo" | "vendido"
   currentOdometer: number
   nextMaintenance: string
   docStatus: "ok" | "warning" | "expired"
@@ -39,7 +39,7 @@ export default function VehiclesPage() {
   const [metrics, setMetrics] = useState<VehicleDashboardMetrics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [globalFilter, setGlobalFilter] = useState("")
-  const [density, setDensity] = useState<TableDensity>("comfortable")
+  const [density, setDensity] = useState<TableDensity>("compact")
 
   useEffect(() => {
     // Carrega preferência de densidade salva
@@ -69,12 +69,12 @@ export default function VehiclesPage() {
           driverName: v.driverName || "Não Atribuído",
           isActive: v.isActive,
           
-          unit: "Matriz - SP", // Could be from DB later
-          status: v.isActive ? "active" : "inactive",
+          unit: v.unitName || "-", 
+          status: v.status || (v.isActive ? "operando" : "inativo"),
           currentOdometer: v.currentOdometer || 0,
           nextMaintenance: "-", // Could be computed from maintenance records
           docStatus: "ok", // Could be computed from documents
-          monthlyCost: 0, // Could be from expenses
+          monthlyCost: v.monthlyCost || 0,
           lastUpdate: new Date(v.updatedAt || Date.now()).toLocaleDateString('pt-BR')
         }
       })
@@ -103,9 +103,8 @@ export default function VehiclesPage() {
       cell: ({ row }) => {
         const v = row.original
         return (
-          <div className="flex flex-col">
-            <span className="font-semibold text-foreground">{v.brand} {v.model}</span>
-            <span className="text-muted-foreground text-[10px]">{v.year}</span>
+          <div className="flex flex-col min-w-[120px]">
+            <span className="font-semibold text-foreground truncate max-w-[140px]">{v.brand} {v.model}</span>
           </div>
         )
       }
@@ -114,7 +113,7 @@ export default function VehiclesPage() {
       accessorKey: "plate",
       header: "Placa",
       cell: ({ row }) => (
-        <Badge variant="outline" className="font-mono bg-muted/20 text-xs px-1.5 py-0">
+        <Badge variant="outline" className="font-semibold bg-muted/20 text-xs px-1.5 py-0 text-foreground border-transparent whitespace-nowrap">
           {row.original.plate.toUpperCase()}
         </Badge>
       )
@@ -126,11 +125,11 @@ export default function VehiclesPage() {
         const name = row.original.driverName
         if (name === "Não Atribuído") return <span className="text-muted-foreground italic text-xs">Sem motorista</span>
         return (
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-[9px] font-bold text-blue-700 dark:text-blue-400">
+          <div className="flex items-center gap-1.5 min-w-[120px]">
+            <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 flex shrink-0 items-center justify-center text-[9px] font-bold text-blue-700 dark:text-blue-400">
               {name?.charAt(0)}
             </div>
-            <span className="text-xs font-medium">{name}</span>
+            <span className="text-[11px] font-medium truncate max-w-[120px]">{name}</span>
           </div>
         )
       }
@@ -138,28 +137,31 @@ export default function VehiclesPage() {
     {
       accessorKey: "unit",
       header: "Unidade",
-      cell: ({ row }) => <span className="text-muted-foreground">{row.original.unit}</span>
+      cell: ({ row }) => <span className="text-muted-foreground whitespace-nowrap text-[11px]">{row.original.unit}</span>
     },
     {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
         const status = row.original.status
-        if (status === 'active') return <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-0 shadow-none text-[10px]">Em Operação</Badge>
-        if (status === 'maintenance') return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-0 shadow-none text-[10px]">Manutenção</Badge>
-        return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-0 shadow-none text-[10px]">Inativo</Badge>
+        if (status === 'operando') return <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-0 shadow-none text-[10px] whitespace-nowrap px-1.5 py-0 h-4">Em Operação</Badge>
+        if (status === 'manutencao') return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-0 shadow-none text-[10px] whitespace-nowrap px-1.5 py-0 h-4">Em Manutenção</Badge>
+        if (status === 'oficina') return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-0 shadow-none text-[10px] whitespace-nowrap px-1.5 py-0 h-4">Na Oficina</Badge>
+        if (status === 'inativo') return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-0 shadow-none text-[10px] whitespace-nowrap px-1.5 py-0 h-4">Inativo</Badge>
+        if (status === 'vendido') return <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100 border-0 shadow-none text-[10px] whitespace-nowrap px-1.5 py-0 h-4">Vendido</Badge>
+        return <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100 border-0 shadow-none text-[10px] whitespace-nowrap px-1.5 py-0 h-4">Desconhecido</Badge>
       }
     },
     {
       accessorKey: "currentOdometer",
-      header: "Quilometragem",
+      header: "Km Atual",
       cell: ({ row }) => (
-        <span className="font-medium">{row.original.currentOdometer.toLocaleString('pt-BR')} km</span>
+        <span className="font-medium whitespace-nowrap">{row.original.currentOdometer.toLocaleString('pt-BR')} km</span>
       )
     },
     {
       accessorKey: "nextMaintenance",
-      header: "Próx. Manutenção",
+      header: "Manutenção",
       cell: ({ row }) => {
         const val = row.original.nextMaintenance
         const isDelayed = val === "Atrasada"
@@ -172,7 +174,7 @@ export default function VehiclesPage() {
     },
     {
       accessorKey: "docStatus",
-      header: "Documentos",
+      header: "Docs",
       cell: ({ row }) => {
         const doc = row.original.docStatus
         if (doc === 'ok') return <span className="text-green-500 font-medium">Regular</span>
@@ -184,7 +186,7 @@ export default function VehiclesPage() {
       accessorKey: "monthlyCost",
       header: "Custo Mês",
       cell: ({ row }) => (
-        <span className="font-medium">
+        <span className="font-medium whitespace-nowrap">
           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(row.original.monthlyCost)}
         </span>
       )
@@ -193,7 +195,7 @@ export default function VehiclesPage() {
       accessorKey: "lastUpdate",
       header: "Atualização",
       cell: ({ row }) => (
-        <div className="flex items-center text-muted-foreground gap-1">
+        <div className="flex items-center text-muted-foreground gap-1 whitespace-nowrap text-[11px]">
           <Clock className="w-3 h-3" />
           {row.original.lastUpdate}
         </div>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { AppLayout } from "@/components/layout/AppLayout"
 import { PageHeader } from "@/components/ui/page-header"
@@ -20,23 +21,47 @@ export default function FineDetailsPage() {
   const params = useParams()
   const id = params.id as string
 
-  // Mock data for the specific fine
-  const mockFine = {
-    id: id,
-    autoNumber: "AIT-849312",
-    category: "Excesso de Velocidade",
-    status: "Em Recurso" as const,
-    vehicle: "Scania R450 (XYZ-9876)",
-    driver: "Carlos Oliveira",
-    value: 195.23,
-    points: 5,
-    daysRemaining: 12,
-    responsible: "Jurídico (Ana)",
-    lastUpdate: "Ontem, 14:30",
-    description: "Transitar em velocidade superior à máxima permitida em até 20%",
-    organ: "DER/SP",
-    location: "Rodovia Castelo Branco, km 45 - Sentido Interior",
-    infractionCode: "745-50",
+  const [fine, setFine] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchFine = async () => {
+      try {
+        setIsLoading(true)
+        import("@/services/fine.service").then(({ fineService }) => {
+          fineService.getFineById(id).then(res => {
+            setFine(res)
+            setIsLoading(false)
+          })
+        })
+      } catch (error) {
+        console.error(error)
+        setIsLoading(false)
+      }
+    }
+    
+    if (id) fetchFine()
+  }, [id])
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-full min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  if (!fine) {
+    return (
+      <AppLayout>
+        <div className="text-center py-12">
+          <h2 className="text-xl font-bold text-foreground">Infração não encontrada</h2>
+          <Button variant="outline" className="mt-4" onClick={() => router.push('/fines')}>Voltar</Button>
+        </div>
+      </AppLayout>
+    )
   }
 
   const mockTimelineEvents: TimelineEvent[] = [
@@ -84,8 +109,8 @@ export default function FineDetailsPage() {
         
         <PageHeader 
           breadcrumbs={[{ label: "Frota", href: "/vehicles" }, { label: "Multas", href: "/fines" }, { label: "Visão 360º" }]}
-          title={mockFine.autoNumber}
-          description={`${mockFine.category} • Veículo: ${mockFine.vehicle} • Motorista: ${mockFine.driver}`}
+          title={fine.auto_number || "Auto não informado"}
+          description={`${fine.category} • Veículo: ${fine.vehicle_plate || 'N/A'} • Motorista: ${fine.driver_name || 'N/A'}`}
           actions={
             <>
               <Button variant="outline" className="h-9 text-xs shadow-sm">
@@ -105,14 +130,14 @@ export default function FineDetailsPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-2">
           <MetricCard 
             title="Valor da Multa" 
-            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(mockFine.value)} 
+            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(fine.value || 0)} 
             icon={<CreditCard className="h-4 w-4" />} 
             iconBgColor="bg-blue-100" 
             iconColor="text-blue-600" 
           />
           <MetricCard 
             title="Pontuação" 
-            value={`${mockFine.points} Pontos`} 
+            value={`${fine.points || 0} Pontos`} 
             icon={<ShieldAlert className="h-4 w-4" />} 
             iconBgColor="bg-orange-100" 
             iconColor="text-orange-600" 
@@ -121,23 +146,23 @@ export default function FineDetailsPage() {
             title="Situação" 
             value={
               <div className="flex items-center -ml-1 mt-1">
-                <StatusPill label={mockFine.status} status="warning" />
+                <StatusPill label={fine.status === 'aberto' ? 'Em Aberto' : (fine.status === 'pago' ? 'Pago' : fine.status)} status={fine.status === 'pago' ? 'success' : 'warning'} />
               </div>
             } 
           />
           <MetricCard 
-            title="Prazo Recurso/Pagto" 
-            value={`${mockFine.daysRemaining} dias`} 
+            title="Vencimento" 
+            value={fine.due_date ? new Date(fine.due_date).toLocaleDateString('pt-BR') : 'N/A'} 
             icon={<Clock className="h-4 w-4" />} 
           />
           <MetricCard 
-            title="Responsável" 
-            value={mockFine.responsible} 
-            icon={<User className="h-4 w-4" />} 
+            title="Veículo" 
+            value={fine.vehicle_plate || 'Não associado'} 
+            icon={<Car className="h-4 w-4" />} 
           />
           <MetricCard 
             title="Última Atualização" 
-            value={mockFine.lastUpdate} 
+            value={fine.updated_at ? new Date(fine.updated_at).toLocaleDateString('pt-BR') : 'N/A'} 
             icon={<History className="h-4 w-4" />} 
           />
         </div>
@@ -186,21 +211,21 @@ export default function FineDetailsPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 border rounded-lg bg-muted/20">
                           <p className="text-xs text-muted-foreground mb-1">Órgão Autuador</p>
-                          <p className="font-medium text-sm">{mockFine.organ}</p>
+                          <p className="font-medium text-sm">{fine.organ || 'Não informado'}</p>
                         </div>
                         <div className="p-4 border rounded-lg bg-muted/20">
-                          <p className="text-xs text-muted-foreground mb-1">Código da Infração</p>
-                          <p className="font-medium text-sm">{mockFine.infractionCode}</p>
+                          <p className="text-xs text-muted-foreground mb-1">Data da Infração</p>
+                          <p className="font-medium text-sm">{fine.infraction_date ? new Date(fine.infraction_date).toLocaleDateString('pt-BR') : 'N/A'}</p>
                         </div>
                         <div className="col-span-2 p-4 border rounded-lg bg-muted/20">
-                          <p className="text-xs text-muted-foreground mb-1">Descrição Oficial</p>
-                          <p className="font-medium text-sm">{mockFine.description}</p>
+                          <p className="text-xs text-muted-foreground mb-1">Descrição</p>
+                          <p className="font-medium text-sm">{fine.description || fine.category}</p>
                         </div>
                         <div className="col-span-2 p-4 border rounded-lg bg-muted/20">
-                          <p className="text-xs text-muted-foreground mb-1">Local da Ocorrência</p>
+                          <p className="text-xs text-muted-foreground mb-1">Notas adicionais</p>
                           <div className="flex items-start gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                            <p className="font-medium text-sm">{mockFine.location}</p>
+                            <p className="font-medium text-sm">{fine.notes || 'Nenhuma nota registrada'}</p>
                           </div>
                         </div>
                       </div>

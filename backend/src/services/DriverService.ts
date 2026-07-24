@@ -4,8 +4,8 @@ import type { Driver, VehicleDriverAssignment } from "../types"
 export class DriverService {
   async create(driverData: Partial<Driver>): Promise<Driver> {
     const result = await query(
-      `INSERT INTO drivers (user_id, name, cnh_number, cnh_category, cnh_expiry_date, phone, email, special_load_certified, photo_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO drivers (user_id, name, cnh_number, cnh_category, cnh_expiry_date, phone, email, special_load_certified, photo_url, admission_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         driverData.userId,
@@ -17,6 +17,7 @@ export class DriverService {
         driverData.email,
         driverData.specialLoadCertified || false,
         driverData.photoUrl,
+        driverData.admissionDate
       ],
     )
 
@@ -133,6 +134,7 @@ export class DriverService {
       email: row.email,
       specialLoadCertified: row.special_load_certified,
       photoUrl: row.photo_url,
+      admissionDate: row.admission_date,
       isActive: row.is_active,
       createdAt: row.created_at,
       updatedAt: row.updated_at,

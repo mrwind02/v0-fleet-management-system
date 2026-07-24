@@ -42,5 +42,15 @@ export const fineService = {
     } catch (error) {
       throw handleApiError(error)
     }
+  },
+
+  getFineById: async (id: string): Promise<Fine> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/fines/${id}`)
+      if (!response.ok) throw new Error("Falha ao buscar multa")
+      return await response.json()
+    } catch (error) {
+      throw handleApiError(error)
+    }
   }
 }

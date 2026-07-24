@@ -140,5 +140,13 @@ export const fuelService = {
 
 // Dashboard Services
 export const dashboardService = {
-  getMetrics: () => api.get("/dashboard/metrics")
+  getMetrics: (startDate?: string, endDate?: string) => api.get("/dashboard/metrics", { params: { startDate, endDate } })
 }
+
+// Unit Services
+export const unitService = {
+  getAll: () => api.get("/units")
+}
+
+// Work Order Services
+export { workOrderService } from "./work-order.service"

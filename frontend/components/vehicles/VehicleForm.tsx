@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { vehicleService } from "../../services/api"
+import { useState, useEffect } from "react"
+import { useForm, Controller } from "react-hook-form"
+import { vehicleService, unitService } from "../../services/api"
 
 interface VehicleFormProps {
   onSuccess?: () => void
@@ -12,13 +12,22 @@ interface VehicleFormProps {
 export function VehicleForm({ onSuccess, initialData }: VehicleFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [units, setUnits] = useState<any[]>([])
   const {
     register,
     handleSubmit,
+    control,
+    setValue,
     formState: { errors },
   } = useForm({
-    defaultValues: initialData,
+    defaultValues: initialData || { status: "operando" },
   })
+
+  useEffect(() => {
+    unitService.getAll().then((res) => {
+      setUnits(res.data.data || [])
+    }).catch(console.error)
+  }, [])
 
   const onSubmit = async (data: any) => {
     setError("")
@@ -42,6 +51,40 @@ export function VehicleForm({ onSuccess, initialData }: VehicleFormProps) {
       {error && <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-lg text-sm">{error}</div>}
 
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-3">
+        <div className="space-y-1">
+          <label className="block text-xs font-semibold text-muted-foreground">Unidade <span className="text-red-500">*</span></label>
+          <select
+            {...register("unitId", { 
+              required: "Obrigatório",
+              onChange: (e) => {
+                const selectedUnit = units.find(u => u.id === e.target.value)
+                setValue("unitName", selectedUnit?.name || "")
+              }
+            })}
+            className="w-full px-3 py-1.5 text-xs bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-blue-500 outline-none"
+          >
+            <option value="">Selecione...</option>
+            {units.map(u => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+          {errors.unitId && <span className="text-red-500 text-[10px] mt-0.5">{String(errors.unitId.message)}</span>}
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-xs font-semibold text-muted-foreground">Status <span className="text-red-500">*</span></label>
+          <select
+            {...register("status", { required: "Obrigatório" })}
+            className="w-full px-3 py-1.5 text-xs bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-blue-500 outline-none"
+          >
+            <option value="operando">Em Operação</option>
+            <option value="manutencao">Em Manutenção</option>
+            <option value="oficina">Na Oficina</option>
+            <option value="inativo">Inativo</option>
+            <option value="vendido">Vendido</option>
+          </select>
+          {errors.status && <span className="text-red-500 text-[10px] mt-0.5">{String(errors.status.message)}</span>}
+        </div>
         <div className="space-y-1">
           <label className="block text-xs font-semibold text-muted-foreground">Placa <span className="text-red-500">*</span></label>
           <input
@@ -118,7 +161,7 @@ export function VehicleForm({ onSuccess, initialData }: VehicleFormProps) {
         </div>
 
         <div className="space-y-1">
-          <label className="block text-xs font-semibold text-muted-foreground">Capacidade de Carga (kg)</label>
+          <label className="block text-xs font-semibold text-muted-foreground truncate" title="Capacidade de Carga (kg)">Capacidade de Carga (kg)</label>
           <input
             type="number"
             placeholder="25000"

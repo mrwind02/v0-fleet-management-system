@@ -57,7 +57,7 @@ const navigation: (NavItem | NavModule)[] = [
   {
     module: "MANUTENÇÃO",
     items: [
-      { title: "Ordens de Serviço", href: "/maintenance/os", icon: Wrench },
+      { title: "Ordens de Serviço", href: "/manutencao/ordens-servico", icon: Wrench },
       { title: "Preventivas", href: "/maintenance/preventive", icon: Activity },
       { title: "Checklists", href: "/maintenance/checklist", icon: ClipboardCheck },
     ],

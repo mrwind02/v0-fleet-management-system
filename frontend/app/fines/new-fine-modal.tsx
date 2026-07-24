@@ -63,17 +63,32 @@ export function NewFineModal({ open, onOpenChange }: NewFineModalProps) {
     },
   })
 
+  const [vehicles, setVehicles] = React.useState<any[]>([])
+  const [drivers, setDrivers] = React.useState<any[]>([])
+
+  React.useEffect(() => {
+    import("@/services/api").then(({ vehicleService, driverService }) => {
+      vehicleService.getAll().then(res => setVehicles(res.data.data || []))
+      driverService.getAll().then(res => setDrivers(res.data.data || []))
+    })
+  }, [])
+
   const vehicleId = form.watch("vehicleId")
   const points = form.watch("points")
+  const driverId = form.watch("driverId")
 
-  // Simulate auto-filling driver when vehicle changes
+  // Auto-fill driver when vehicle changes if it has a driver assigned
   React.useEffect(() => {
-    if (vehicleId === "1") {
-      form.setValue("driverId", "1")
-    } else if (vehicleId === "2") {
-      form.setValue("driverId", "2")
+    if (vehicleId) {
+      const selectedVehicle = vehicles.find(v => v.id === vehicleId)
+      if (selectedVehicle && selectedVehicle.driverId) {
+        form.setValue("driverId", selectedVehicle.driverId)
+      }
     }
-  }, [vehicleId, form])
+  }, [vehicleId, vehicles, form])
+
+  const selectedVehicleData = React.useMemo(() => vehicles.find(v => v.id === vehicleId), [vehicleId, vehicles])
+  const selectedDriverData = React.useMemo(() => drivers.find(d => d.id === driverId), [driverId, drivers])
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -198,10 +213,7 @@ export function NewFineModal({ open, onOpenChange }: NewFineModalProps) {
                         <FormControl>
                           <Autocomplete
                             placeholder="Buscar veículo..."
-                            options={[
-                              { label: "Scania R450", value: "1", description: "Placa: PQF-3C53" },
-                              { label: "Volvo FH540", value: "2", description: "Placa: ABC-1234" }
-                            ]}
+                            options={vehicles.map(v => ({ label: `${v.plate} - ${v.brand}`, value: v.id, description: v.model }))}
                             value={field.value}
                             onChange={field.onChange}
                             error={!!form.formState.errors.vehicleId}
@@ -212,7 +224,7 @@ export function NewFineModal({ open, onOpenChange }: NewFineModalProps) {
                     )} />
 
                     <AnimatePresence>
-                      {vehicleId && (
+                      {selectedVehicleData && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
@@ -224,8 +236,8 @@ export function NewFineModal({ open, onOpenChange }: NewFineModalProps) {
                               <Car className="h-5 w-5" />
                             </div>
                             <div>
-                              <p className="text-sm font-semibold">Scania R450</p>
-                              <p className="text-xs text-muted-foreground">PQF-3C53</p>
+                              <p className="text-sm font-semibold">{selectedVehicleData.brand} {selectedVehicleData.model}</p>
+                              <p className="text-xs text-muted-foreground">{selectedVehicleData.plate}</p>
                             </div>
                           </div>
                         </motion.div>
@@ -244,10 +256,7 @@ export function NewFineModal({ open, onOpenChange }: NewFineModalProps) {
                         <FormControl>
                           <Autocomplete
                             placeholder="Buscar motorista..."
-                            options={[
-                              { label: "João Silva", value: "1", description: "CNH: 12345678" },
-                              { label: "Carlos Oliveira", value: "2", description: "CNH: 87654321" }
-                            ]}
+                            options={drivers.map(d => ({ label: d.name, value: d.id, description: `CNH: ${d.cnhNumber || 'N/A'}` }))}
                             value={field.value}
                             onChange={field.onChange}
                             error={!!form.formState.errors.driverId}
@@ -258,7 +267,7 @@ export function NewFineModal({ open, onOpenChange }: NewFineModalProps) {
                     )} />
 
                     <AnimatePresence>
-                      {form.watch("driverId") && (
+                      {selectedDriverData && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
@@ -270,8 +279,8 @@ export function NewFineModal({ open, onOpenChange }: NewFineModalProps) {
                               <User className="h-5 w-5" />
                             </div>
                             <div>
-                              <p className="text-sm font-semibold">João Silva</p>
-                              <p className="text-xs text-muted-foreground">CNH Válida (Cat E)</p>
+                              <p className="text-sm font-semibold">{selectedDriverData.name}</p>
+                              <p className="text-xs text-muted-foreground">CNH {selectedDriverData.cnhCategory ? `Cat. ${selectedDriverData.cnhCategory}` : 'N/A'}</p>
                             </div>
                           </div>
                         </motion.div>

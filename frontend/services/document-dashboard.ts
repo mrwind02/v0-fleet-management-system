@@ -1,3 +1,5 @@
+import { API_BASE_URL, handleApiError } from "../utils"
+
 export interface DocumentDashboardMetrics {
   totalDocuments: number
   validDocuments: number
@@ -7,40 +9,44 @@ export interface DocumentDashboardMetrics {
   complianceIndex: number
 }
 
-/**
- * Camada de abstração para os dados do Dashboard de Documentos.
- * Fornece dados mockados para UI até que a API esteja pronta.
- */
 export const documentDashboardService = {
   getMetrics: async (): Promise<DocumentDashboardMetrics> => {
-    // Simulando delay de rede
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    return {
-      totalDocuments: 1450,
-      validDocuments: 1320,
-      expiringDocuments: 85,
-      expiredDocuments: 12,
-      pendingApproval: 33,
-      complianceIndex: 96.8
+    try {
+      const response = await fetch(`${API_BASE_URL}/documents/metrics`)
+      if (!response.ok) throw new Error("Falha ao buscar métricas de documentos")
+      return await response.json()
+    } catch (error) {
+      throw handleApiError(error)
     }
   },
 
   getComplianceData: async () => {
-    return [
-      { name: 'Válidos', value: 1320, fill: 'var(--color-success)' },
-      { name: 'A Vencer', value: 85, fill: 'var(--color-warning)' },
-      { name: 'Vencidos', value: 12, fill: 'var(--color-destructive)' },
-    ]
+    try {
+      const response = await fetch(`${API_BASE_URL}/documents/compliance`)
+      if (!response.ok) throw new Error("Falha ao buscar dados de conformidade")
+      return await response.json()
+    } catch (error) {
+      throw handleApiError(error)
+    }
   },
 
   getCategoryData: async () => {
-    return [
-      { name: 'Veículos', value: 650 },
-      { name: 'Motoristas', value: 420 },
-      { name: 'Seguros', value: 180 },
-      { name: 'Empresa', value: 120 },
-      { name: 'Licenças', value: 80 }
-    ]
+    try {
+      const response = await fetch(`${API_BASE_URL}/documents/by-category`)
+      if (!response.ok) throw new Error("Falha ao buscar documentos por categoria")
+      return await response.json()
+    } catch (error) {
+      throw handleApiError(error)
+    }
+  },
+
+  getExpiryByMonth: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/documents/expiry-by-month`)
+      if (!response.ok) throw new Error("Falha ao buscar previsão de vencimentos")
+      return await response.json()
+    } catch (error) {
+      throw handleApiError(error)
+    }
   }
 }

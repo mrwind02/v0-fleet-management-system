@@ -6,7 +6,7 @@ export class DriverController {
 
   async create(req: Request, res: Response) {
     try {
-      const { name, cnhNumber, cnhCategory, cnhExpiryDate, phone, email, specialLoadCertified, photoUrl, userId } =
+      const { name, cnhNumber, cnhCategory, cnhExpiryDate, phone, email, specialLoadCertified, photoUrl, admissionDate, userId } =
         req.body
 
       // Validações
@@ -30,6 +30,7 @@ export class DriverController {
         email,
         specialLoadCertified,
         photoUrl,
+        admissionDate: admissionDate ? new Date(admissionDate) : undefined,
       })
 
       res.status(201).json({ success: true, data: driver })

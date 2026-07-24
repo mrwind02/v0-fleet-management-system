@@ -42,19 +42,19 @@ export function AlertPanel({ title = "Alertas Recentes", alerts, className }: Al
       <div className="px-4 py-3 border-b bg-muted/20 font-semibold text-sm">
         {title}
       </div>
-      <div className="flex flex-col p-2 gap-2 max-h-[500px] overflow-y-auto">
+      <div className="flex flex-col p-2 gap-1.5 max-h-[500px] overflow-y-auto">
         {alerts.length === 0 ? (
           <div className="p-4 text-center text-sm text-muted-foreground">Nenhum alerta.</div>
         ) : (
           alerts.map(alert => (
-            <div key={alert.id} className={cn("flex gap-3 p-3 rounded-lg border", getBg(alert.type))}>
-              <div className="shrink-0 mt-0.5">{getIcon(alert.type)}</div>
+            <div key={alert.id} className={cn("flex gap-2.5 px-3 py-2 rounded-lg border items-center", getBg(alert.type))}>
+              <div className="shrink-0">{getIcon(alert.type)}</div>
               <div className="flex flex-col w-full">
-                <div className="flex justify-between items-start gap-2">
-                  <span className="text-sm font-semibold">{alert.title}</span>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-xs font-semibold">{alert.title}</span>
                   {alert.date && <span className="text-[10px] text-muted-foreground whitespace-nowrap">{alert.date}</span>}
                 </div>
-                {alert.description && <p className="text-xs text-muted-foreground mt-0.5">{alert.description}</p>}
+                {alert.description && <p className="text-[10px] text-muted-foreground mt-0.5">{alert.description}</p>}
               </div>
             </div>
           ))

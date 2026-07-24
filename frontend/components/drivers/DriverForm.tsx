@@ -111,6 +111,15 @@ export function DriverForm({ onSuccess, initialData }: DriverFormProps) {
             className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
         </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Data de Admissão</label>
+          <input
+            type="date"
+            {...register("admissionDate")}
+            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </div>
 
       <div className="flex items-center">

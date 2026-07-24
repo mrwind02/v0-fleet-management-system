@@ -8,6 +8,16 @@ const MaintenanceService_1 = require("../services/MaintenanceService");
 const auth_1 = require("../middlewares/auth");
 const router = express_1.default.Router();
 const service = new MaintenanceService_1.MaintenanceService();
+// Get all maintenance records
+router.get("/", auth_1.authenticateToken, async (req, res) => {
+    try {
+        const records = await service.getAll();
+        res.json({ success: true, data: records });
+    }
+    catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+    }
+});
 router.post("/", auth_1.authenticateToken, (0, auth_1.authorize)("admin", "manager", "driver"), async (req, res) => {
     try {
         const { vehicleId, maintenanceDate, maintenanceType, mechanicName, establishmentName, serviceDescription, cost, odometerReading, attachments, } = req.body;

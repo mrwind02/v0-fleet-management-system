@@ -60,5 +60,20 @@ class AuthService {
         const result = await (0, database_1.query)("SELECT id, email, name, phone, role, is_active, last_login, created_at, updated_at FROM users WHERE id = $1", [id]);
         return result.rows.length > 0 ? result.rows[0] : null;
     }
+    async recoverAccount(email, newPassword) {
+        // Verificar se usuário existe
+        const existingUser = await (0, database_1.query)("SELECT id FROM users WHERE email = $1", [email]);
+        if (existingUser.rows.length === 0) {
+            throw new Error("Usuário não encontrado com este e-mail.");
+        }
+        // Gerar novo hash para a senha
+        const hashedPassword = await (0, password_1.hashPassword)(newPassword);
+        // Atualizar no banco
+        await (0, database_1.query)("UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE email = $2", [
+            hashedPassword,
+            email,
+        ]);
+        return true;
+    }
 }
 exports.AuthService = AuthService;

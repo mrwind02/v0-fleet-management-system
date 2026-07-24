@@ -21,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Select } from "@/components/ui/select"
 
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics"
 import { cn } from "@/utils/utils"
@@ -29,7 +30,10 @@ import { cn } from "@/utils/utils"
 const COLORS = ["#0052FF", "#10B981", "#F59E0B", "#8B5CF6", "#64748B"]
 
 export default function DashboardPage() {
-  const { isLoading, user, metrics, recentActivities, vehicles, drivers } = useDashboardMetrics()
+  const { isLoading, user, metrics, recentActivities, vehicles, drivers, startDate, setStartDate, endDate, setEndDate } = useDashboardMetrics()
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [chartFilter, setChartFilter] = React.useState("all");
+  const itemsPerPage = 5;
 
   const generateAlerts = () => {
     const alerts = [];
@@ -99,6 +103,10 @@ export default function DashboardPage() {
     status: 'Concluído'
   })) : [];
   
+  const totalItems = displayActivities.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const paginatedActivities = displayActivities.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <AppLayout>
       <div className="flex flex-col gap-4 pb-4">
@@ -112,15 +120,34 @@ export default function DashboardPage() {
             <ChevronRight className="h-3 w-3 mx-1.5" />
             <span>Visão Geral</span>
           </div>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto h-8 text-xs">
-              + Novo Lançamento <ChevronRight className="h-3 w-3 ml-1 rotate-90" />
+          <div className="flex gap-2 w-full sm:w-auto items-center">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto h-8 text-xs shrink-0">
+              + Novo Lançamento
             </Button>
-            <Button variant="outline" className="w-full sm:w-auto h-8 text-xs">
-              <Calendar className="mr-2 h-3 w-3" />
-              01/12/2025 - 17/12/2025
-              <Settings2 className="ml-2 h-3 w-3" />
-            </Button>
+            <div className="flex items-center gap-1 bg-white border rounded-md px-2 h-8">
+              <Calendar className="h-3 w-3 text-muted-foreground" />
+              <input 
+                type="date" 
+                value={startDate ? startDate.toISOString().split('T')[0] : ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const newDate = val ? new Date(val + 'T00:00:00') : undefined;
+                  setStartDate(newDate);
+                }}
+                className="text-xs border-none outline-none bg-transparent w-[110px]"
+              />
+              <span className="text-muted-foreground text-xs">-</span>
+              <input 
+                type="date" 
+                value={endDate ? endDate.toISOString().split('T')[0] : ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const newDate = val ? new Date(val + 'T23:59:59') : undefined;
+                  setEndDate(newDate);
+                }}
+                className="text-xs border-none outline-none bg-transparent w-[110px]"
+              />
+            </div>
           </div>
         </div>
 
@@ -195,13 +222,42 @@ export default function DashboardPage() {
               <ChartCard 
                 title="Gastos nos Últimos 12 Meses" 
                 action={
-                  <Button variant="outline" size="sm" className="h-7 text-xs px-2">
-                    Todos os tipos <ChevronRight className="h-3 w-3 ml-1 rotate-90" />
-                  </Button>
+                  <Select 
+                    value={chartFilter}
+                    onChange={(e) => setChartFilter(e.target.value)}
+                    className="h-7 text-[11px] px-2 w-[140px] border-muted-foreground/20 bg-transparent shadow-sm"
+                  >
+                    <option value="all">Todos os tipos</option>
+                    <option value="Manutenção">Manutenção</option>
+                    <option value="Abastecimento">Abastecimento</option>
+                  </Select>
                 }
               >
-                <div className="h-[180px] w-full mt-1 flex items-center justify-center">
-                  <span className="text-sm text-muted-foreground">Sem dados suficientes</span>
+                <div className="h-[180px] w-full mt-1">
+                  {metrics?.costs?.history?.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={metrics.costs.history} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#0052FF" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#0052FF" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748B' }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748B' }} tickFormatter={(value) => `R$${value}`} />
+                        <RechartsTooltip 
+                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                          formatter={(value: number) => [`R$ ${value.toFixed(2)}`, 'Total']}
+                        />
+                        <Area type="monotone" dataKey={chartFilter === 'all' ? 'total' : (chartFilter === 'Manutenção' ? 'manutencao' : 'abastecimento')} stroke="#0052FF" strokeWidth={2} fillOpacity={1} fill="url(#colorTotal)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center">
+                      <span className="text-sm text-muted-foreground">Sem dados suficientes</span>
+                    </div>
+                  )}
                 </div>
               </ChartCard>
 
@@ -209,8 +265,57 @@ export default function DashboardPage() {
               <ChartCard 
                 title="Gastos por Categoria (Mês)" 
               >
-                <div className="h-[180px] w-full mt-1 flex items-center justify-center">
-                  <span className="text-sm text-muted-foreground">Sem lançamentos no período</span>
+                <div className="h-[180px] w-full mt-1">
+                  {metrics?.costs?.byCategory?.length > 0 ? (
+                    <div className="flex items-center h-full w-full">
+                      <div className="relative w-1/2 h-full flex items-center justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={metrics.costs.byCategory}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={70}
+                              paddingAngle={2}
+                              dataKey="value"
+                            >
+                              {metrics.costs.byCategory.map((entry: any, index: number) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip 
+                              formatter={(value: number) => [`R$ ${value.toFixed(2)}`, 'Valor']}
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                          <span className="text-[10px] text-muted-foreground font-medium">Total</span>
+                          <span className="text-[11px] font-bold">R$ {metrics.costs.byCategory.reduce((acc: number, curr: any) => acc + curr.value, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                      </div>
+                      <div className="w-1/2 flex flex-col justify-center gap-2 pl-2 overflow-y-auto">
+                        {metrics.costs.byCategory.map((cat: any, idx: number) => {
+                          const total = metrics.costs.byCategory.reduce((acc: number, curr: any) => acc + curr.value, 0);
+                          const percentage = total > 0 ? ((cat.value / total) * 100).toFixed(1) : "0.0";
+                          return (
+                            <div key={idx} className="flex flex-col">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
+                                <span className="text-[11px] font-medium leading-none text-foreground">{cat.name}</span>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground pl-3.5 mt-0.5 leading-none">R$ {cat.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({percentage}%)</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center">
+                      <span className="text-sm text-muted-foreground">Sem lançamentos no período</span>
+                    </div>
+                  )}
                 </div>
               </ChartCard>
             </div>
@@ -238,21 +343,21 @@ export default function DashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {displayActivities.length === 0 ? (
+                    {paginatedActivities.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={9} className="text-center py-6 text-sm text-muted-foreground">
                           Nenhum lançamento recente
                         </TableCell>
                       </TableRow>
                     ) : (
-                      displayActivities.map((entry: any) => (
+                      paginatedActivities.map((entry: any) => (
                         <TableRow key={entry.id} className="border-b/50 h-8">
                           <TableCell className="px-3 py-1"><Checkbox className="rounded-[4px] border-muted-foreground/30" /></TableCell>
                           <TableCell className="text-[10px] font-medium text-muted-foreground py-1 whitespace-nowrap">{entry.date}</TableCell>
                           <TableCell className="py-1">
                             <div className="flex flex-col whitespace-nowrap">
                               <span className="font-semibold text-[10px]">{entry.vehicle}</span>
-                              <span className="text-[8px] text-muted-foreground">{entry.model}</span>
+                              {entry.model && entry.model !== "-" && <span className="text-[8px] text-muted-foreground">{entry.model}</span>}
                             </div>
                           </TableCell>
                           <TableCell className="text-[10px] py-1">{entry.driver}</TableCell>
@@ -270,7 +375,7 @@ export default function DashboardPage() {
                           <TableCell className="py-1">
                             <div className="flex flex-col whitespace-nowrap">
                               <span className="text-[10px]">{entry.place}</span>
-                              <span className="text-[8px] text-muted-foreground">{entry.city}</span>
+                              {entry.city && entry.city !== "-" && <span className="text-[8px] text-muted-foreground">{entry.city}</span>}
                             </div>
                           </TableCell>
                           <TableCell className="text-right text-[10px] py-1 font-semibold whitespace-nowrap">{entry.value}</TableCell>
@@ -297,15 +402,39 @@ export default function DashboardPage() {
               
               {/* Pagination footer */}
               <div className="p-3 border-t flex items-center justify-between bg-muted/20 mt-auto">
-                <span className="text-[11px] text-muted-foreground">Mostrando 1 a 5 de 50 registros</span>
+                <span className="text-[11px] text-muted-foreground">
+                  Mostrando {totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} a {Math.min(currentPage * itemsPerPage, totalItems)} de {totalItems} registros
+                </span>
                 <div className="flex items-center gap-1">
-                  <Button variant="outline" size="icon" className="h-6 w-6 text-muted-foreground rounded-md"><ChevronRight className="h-3 w-3 rotate-180" /></Button>
-                  <Button variant="default" size="icon" className="h-6 w-6 rounded-md bg-blue-600 text-xs">1</Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md text-xs">2</Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md text-xs">3</Button>
-                  <span className="px-1 text-muted-foreground text-xs">...</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md text-xs">10</Button>
-                  <Button variant="outline" size="icon" className="h-6 w-6 text-muted-foreground rounded-md"><ChevronRight className="h-3 w-3" /></Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-6 w-6 text-muted-foreground rounded-md"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronRight className="h-3 w-3 rotate-180" />
+                  </Button>
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <Button 
+                      key={i} 
+                      variant={currentPage === i + 1 ? "default" : "ghost"} 
+                      size="icon" 
+                      className={cn("h-6 w-6 rounded-md text-xs", currentPage === i + 1 && "bg-blue-600 text-white")}
+                      onClick={() => setCurrentPage(i + 1)}
+                    >
+                      {i + 1}
+                    </Button>
+                  ))}
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-6 w-6 text-muted-foreground rounded-md"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="h-3 w-3" />
+                  </Button>
                 </div>
               </div>
             </div>

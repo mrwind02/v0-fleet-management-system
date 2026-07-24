@@ -5,12 +5,13 @@ import maintenanceRoutes from "./maintenance"
 import questionnaireRoutes from "./questionnaire"
 import reportRoutes from "./reports"
 import fuelRoutes from "./fuel"
-
+import workOrderRoutes from "./work-orders"
 import settingsRoutes from "./settings"
 import usersRoutes from "./users"
 import finesRoutes from "./fines"
 import documentsRoutes from "./documents"
 import dashboardRoutes from "./dashboard"
+import unitsRoutes from "./units"
 
 export function setupRoutes(app: any) {
   // Health check for monitoring
@@ -22,6 +23,7 @@ export function setupRoutes(app: any) {
   app.use("/api/vehicles", vehicleRoutes)
   app.use("/api/drivers", driverRoutes)
   app.use("/api/maintenance", maintenanceRoutes)
+  app.use("/api/work-orders", workOrderRoutes)
   app.use("/api/questionnaire", questionnaireRoutes)
   app.use("/api/reports", reportRoutes)
   app.use("/api/fuel", fuelRoutes)
@@ -30,4 +32,5 @@ export function setupRoutes(app: any) {
   app.use("/api/fines", finesRoutes)
   app.use("/api/documents", documentsRoutes)
   app.use("/api/dashboard", dashboardRoutes)
+  app.use("/api/units", unitsRoutes)
 }

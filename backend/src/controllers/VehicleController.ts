@@ -6,7 +6,7 @@ export class VehicleController {
 
   async create(req: Request, res: Response) {
     try {
-      const { plate, renavam, brand, model, year, color, transportType, chassisNumber, loadCapacity, observations } =
+      const { plate, renavam, brand, model, year, color, transportType, chassisNumber, loadCapacity, observations, unitId, unitName, status } =
         req.body
 
       // Validações
@@ -31,6 +31,9 @@ export class VehicleController {
         chassisNumber,
         loadCapacity: loadCapacity ? Number.parseFloat(loadCapacity) : undefined,
         observations,
+        unitId,
+        unitName,
+        status,
       })
 
       res.status(201).json({ success: true, data: vehicle })

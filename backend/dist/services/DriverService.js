@@ -4,8 +4,8 @@ exports.DriverService = void 0;
 const database_1 = require("../config/database");
 class DriverService {
     async create(driverData) {
-        const result = await (0, database_1.query)(`INSERT INTO drivers (user_id, name, cnh_number, cnh_category, cnh_expiry_date, phone, email, special_load_certified, photo_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        const result = await (0, database_1.query)(`INSERT INTO drivers (user_id, name, cnh_number, cnh_category, cnh_expiry_date, phone, email, special_load_certified, photo_url, admission_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`, [
             driverData.userId,
             driverData.name,
@@ -16,6 +16,7 @@ class DriverService {
             driverData.email,
             driverData.specialLoadCertified || false,
             driverData.photoUrl,
+            driverData.admissionDate
         ]);
         return this.mapToDriver(result.rows[0]);
     }
@@ -34,9 +35,20 @@ class DriverService {
         const result = await (0, database_1.query)("SELECT * FROM drivers WHERE id = $1", [id]);
         return result.rows.length > 0 ? this.mapToDriver(result.rows[0]) : null;
     }
+    async getByUserId(userId) {
+        const result = await (0, database_1.query)("SELECT * FROM drivers WHERE user_id = $1", [userId]);
+        return result.rows.length > 0 ? this.mapToDriver(result.rows[0]) : null;
+    }
     async getByCNH(cnhNumber) {
         const result = await (0, database_1.query)("SELECT * FROM drivers WHERE cnh_number = $1", [cnhNumber]);
         return result.rows.length > 0 ? this.mapToDriver(result.rows[0]) : null;
+    }
+    async getByEmail(email) {
+        const result = await (0, database_1.query)("SELECT * FROM drivers WHERE email = $1", [email]);
+        return result.rows.length > 0 ? this.mapToDriver(result.rows[0]) : null;
+    }
+    async linkToUser(driverId, userId) {
+        await (0, database_1.query)("UPDATE drivers SET user_id = $1 WHERE id = $2", [userId, driverId]);
     }
     async update(id, driverData) {
         const updates = [];
@@ -89,6 +101,7 @@ class DriverService {
             email: row.email,
             specialLoadCertified: row.special_load_certified,
             photoUrl: row.photo_url,
+            admissionDate: row.admission_date,
             isActive: row.is_active,
             createdAt: row.created_at,
             updatedAt: row.updated_at,

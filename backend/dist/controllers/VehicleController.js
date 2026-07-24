@@ -8,7 +8,7 @@ class VehicleController {
     }
     async create(req, res) {
         try {
-            const { plate, renavam, brand, model, year, color, transportType, chassisNumber, loadCapacity, observations } = req.body;
+            const { plate, renavam, brand, model, year, color, transportType, chassisNumber, loadCapacity, observations, unitId, unitName, status } = req.body;
             // Validações
             if (!plate || !brand || !model || !year || !chassisNumber) {
                 return res.status(400).json({ success: false, error: "Missing required fields" });
@@ -29,6 +29,9 @@ class VehicleController {
                 chassisNumber,
                 loadCapacity: loadCapacity ? Number.parseFloat(loadCapacity) : undefined,
                 observations,
+                unitId,
+                unitName,
+                status,
             });
             res.status(201).json({ success: true, data: vehicle });
         }

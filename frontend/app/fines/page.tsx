@@ -16,7 +16,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { NewFineModal } from "./new-fine-modal"
 import { fineService } from "@/services/fine.service"
 import { cn } from "@/utils/utils"
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, YAxis, CartesianGrid, LineChart, Line } from "recharts"
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, YAxis, CartesianGrid, LineChart, Line, Legend, LabelList, Label } from "recharts"
 import { Download, Plus, AlertOctagon, UserX, TrendingDown, Clock } from "lucide-react"
 
 type ExtendedFine = {
@@ -93,6 +93,15 @@ export default function FinesPage() {
   const [density, setDensity] = useState<TableDensity>("comfortable")
   const [isModalOpen, setIsModalOpen] = useState(false)
 
+  const [categoryData, setCategoryData] = useState<any[]>([])
+  const [monthData, setMonthData] = useState<any[]>([])
+  const [unitData, setUnitData] = useState<any[]>([])
+  const [insights, setInsights] = useState<any>({
+    criticalVehicle: { title: "N/A", value: "0 Multas", description: "Sem dados" },
+    criticalDriver: { title: "N/A", value: "0 Pontos", description: "Sem dados" },
+    trend: { value: "0%", description: "Sem dados", isPositive: true }
+  })
+
   useEffect(() => {
     const savedDensity = localStorage.getItem("fleet:table-density") as TableDensity
     if (savedDensity) setDensity(savedDensity)
@@ -116,6 +125,55 @@ export default function FinesPage() {
           lastUpdate: fine.updated_at ? new Date(fine.updated_at).toLocaleDateString('pt-BR') : '-'
         }))
         setFines(formattedFines)
+
+        // Compute Metrics
+        const catCount: Record<string, number> = {}
+        const monthCost: Record<string, number> = {}
+        const vehicleCount: Record<string, number> = {}
+        const driverPoints: Record<string, number> = {}
+
+        finesData.forEach((f: any) => {
+          // Categories
+          const cat = f.category || "Outros"
+          catCount[cat] = (catCount[cat] || 0) + 1
+
+          // Monthly
+          if (f.infraction_date) {
+            const d = new Date(f.infraction_date)
+            const monthStr = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
+            monthCost[monthStr] = (monthCost[monthStr] || 0) + Number(f.value)
+          }
+
+          // Vehicle Critical
+          if (f.vehicle_plate) {
+            vehicleCount[f.vehicle_plate] = (vehicleCount[f.vehicle_plate] || 0) + 1
+          }
+
+          // Driver Points
+          if (f.driver_name) {
+            driverPoints[f.driver_name] = (driverPoints[f.driver_name] || 0) + Number(f.points)
+          }
+        })
+
+        setCategoryData(Object.entries(catCount).map(([name, value]) => ({ name, value })))
+        setMonthData(Object.entries(monthCost).map(([name, value]) => ({ name, value })))
+        
+        // Mock unit data as fines don't have units directly
+        setUnitData([{ name: "Geral", value: finesData.length }])
+
+        // Compute insights
+        let maxVec = "N/A", maxVecCount = 0
+        Object.entries(vehicleCount).forEach(([v, c]) => { if (c > maxVecCount) { maxVecCount = c; maxVec = v } })
+
+        let maxDrv = "N/A", maxDrvPts = 0
+        Object.entries(driverPoints).forEach(([d, p]) => { if (p > maxDrvPts) { maxDrvPts = p; maxDrv = d } })
+
+        setInsights({
+          criticalVehicle: { title: maxVec, value: `${maxVecCount} Multas`, description: "Veículo com mais infrações" },
+          criticalDriver: { title: maxDrv, value: `${maxDrvPts} Pontos`, description: "Maior pontuação acumulada" },
+          trend: { value: "N/A", description: "Comparativo não disponível", isPositive: true }
+        })
+
       } catch (error) {
         console.error("Erro ao buscar multas:", error)
       }
@@ -238,21 +296,57 @@ export default function FinesPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <ChartCard title="Multas por Categoria" description="Distribuição das infrações">
-                <div className="h-[180px] w-full mt-2 relative">
-                  <div className="absolute inset-0">
+                <div className="flex items-center w-full" style={{ height: 180 }}>
+                  {/* Pie area — fixed 150px wide */}
+                  <div style={{ width: 150, height: 180, flexShrink: 0 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={categoryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-                        <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
-                        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                      <PieChart>
+                        <Pie
+                          data={categoryData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={45}
+                          outerRadius={65}
+                          paddingAngle={2}
+                          dataKey="value"
+                          stroke="none"
+                        >
                           {categoryData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={CAT_COLORS[index % CAT_COLORS.length]} />
                           ))}
-                        </Bar>
-                      </BarChart>
+                          <Label
+                            content={({ viewBox }: any) => {
+                              const { cx, cy } = viewBox;
+                              return (
+                                <g>
+                                  <text x={cx} y={cy - 6} textAnchor="middle" style={{ fontSize: 10, fill: 'var(--muted-foreground)' }}>Total</text>
+                                  <text x={cx} y={cy + 10} textAnchor="middle" style={{ fontSize: 14, fontWeight: 700, fill: 'var(--foreground)' }}>
+                                    {categoryData.reduce((acc, curr) => acc + curr.value, 0)}
+                                  </text>
+                                </g>
+                              );
+                            }}
+                          />
+                        </Pie>
+                        <Tooltip formatter={(value: number) => [`${value} multas`, 'Quantidade']} />
+                      </PieChart>
                     </ResponsiveContainer>
+                  </div>
+                  {/* Legend area — takes remaining space */}
+                  <div className="flex-1 flex flex-col justify-center gap-2 pl-2">
+                    {categoryData.map((entry, index) => {
+                      const total = categoryData.reduce((acc, curr) => acc + curr.value, 0);
+                      const percentage = total > 0 ? ((entry.value / total) * 100).toFixed(1) : "0.0";
+                      return (
+                        <div key={entry.name} className="flex items-start gap-1.5">
+                          <div className="w-2 h-2 rounded-full shrink-0 mt-0.5" style={{ backgroundColor: CAT_COLORS[index % CAT_COLORS.length] }}></div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-medium text-foreground leading-none mb-0.5">{entry.name}</span>
+                            <span className="text-[9px] text-muted-foreground leading-none">{entry.value} multas ({percentage}%)</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </ChartCard>
@@ -261,12 +355,15 @@ export default function FinesPage() {
                 <div className="h-[180px] w-full mt-2 relative">
                   <div className="absolute inset-0">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={monthData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                      <LineChart data={monthData} margin={{ top: 20, right: 10, left: -10, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} tickFormatter={(val) => `R$${val/1000}k`} />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                        <Tooltip formatter={(value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value as number)} />
+                        <Legend wrapperStyle={{ fontSize: '10px' }} />
+                        <Line type="monotone" name="Valor (R$)" dataKey="value" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}>
+                          <LabelList dataKey="value" position="top" style={{ fontSize: '9px', fill: '#666' }} formatter={(val: number) => val > 0 ? `R$${(val/1000).toFixed(1)}k` : ''} />
+                        </Line>
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -274,21 +371,57 @@ export default function FinesPage() {
               </ChartCard>
               
               <ChartCard title="Multas por Unidade" description="Comparativo de filiais">
-                <div className="h-[180px] w-full mt-2 relative">
-                  <div className="absolute inset-0">
+                <div className="flex items-center w-full" style={{ height: 180 }}>
+                  {/* Pie area — fixed 150px wide */}
+                  <div style={{ width: 150, height: 180, flexShrink: 0 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={unitData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} opacity={0.3} />
-                        <XAxis type="number" hide />
-                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} width={70} />
-                        <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
-                        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                      <PieChart>
+                        <Pie
+                          data={unitData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={45}
+                          outerRadius={65}
+                          paddingAngle={2}
+                          dataKey="value"
+                          stroke="none"
+                        >
                           {unitData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={UNIT_COLORS[index % UNIT_COLORS.length]} />
                           ))}
-                        </Bar>
-                      </BarChart>
+                          <Label
+                            content={({ viewBox }: any) => {
+                              const { cx, cy } = viewBox;
+                              return (
+                                <g>
+                                  <text x={cx} y={cy - 6} textAnchor="middle" style={{ fontSize: 10, fill: 'var(--muted-foreground)' }}>Total</text>
+                                  <text x={cx} y={cy + 10} textAnchor="middle" style={{ fontSize: 14, fontWeight: 700, fill: 'var(--foreground)' }}>
+                                    {unitData.reduce((acc, curr) => acc + curr.value, 0)}
+                                  </text>
+                                </g>
+                              );
+                            }}
+                          />
+                        </Pie>
+                        <Tooltip formatter={(value: number) => [`${value} multas`, 'Quantidade']} />
+                      </PieChart>
                     </ResponsiveContainer>
+                  </div>
+                  {/* Legend area — takes remaining space */}
+                  <div className="flex-1 flex flex-col justify-center gap-2 pl-2">
+                    {unitData.map((entry, index) => {
+                      const total = unitData.reduce((acc, curr) => acc + curr.value, 0);
+                      const percentage = total > 0 ? ((entry.value / total) * 100).toFixed(1) : "0.0";
+                      return (
+                        <div key={entry.name} className="flex items-start gap-1.5">
+                          <div className="w-2 h-2 rounded-full shrink-0 mt-0.5" style={{ backgroundColor: UNIT_COLORS[index % UNIT_COLORS.length] }}></div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-medium text-foreground leading-none mb-0.5">{entry.name}</span>
+                            <span className="text-[9px] text-muted-foreground leading-none">{entry.value} multas ({percentage}%)</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </ChartCard>
@@ -298,8 +431,8 @@ export default function FinesPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <InsightCard 
                 title="Veículo Crítico" 
-                value="6 Multas" 
-                description="Scania R450 nos últimos 90 dias" 
+                value={insights.criticalVehicle.title} 
+                description={insights.criticalVehicle.value} 
                 icon={<AlertOctagon className="h-4 w-4" />}
                 iconBgColor="bg-red-100 dark:bg-red-900/40"
                 iconColor="text-red-600 dark:text-red-400"
@@ -309,8 +442,8 @@ export default function FinesPage() {
               />
               <InsightCard 
                 title="Motorista" 
-                value="18 Pontos" 
-                description="Carlos Oliveira com CNH em risco" 
+                value={insights.criticalDriver.title} 
+                description={insights.criticalDriver.value} 
                 icon={<UserX className="h-4 w-4" />}
                 iconBgColor="bg-orange-100 dark:bg-orange-900/40"
                 iconColor="text-orange-600 dark:text-orange-400"
@@ -320,8 +453,8 @@ export default function FinesPage() {
               />
               <InsightCard 
                 title="Tendência" 
-                value="-12%" 
-                description="Redução nas multas (mês ant.)" 
+                value={insights.trend.value} 
+                description={insights.trend.description} 
                 icon={<TrendingDown className="h-4 w-4" />}
                 iconBgColor="bg-green-100 dark:bg-green-900/40"
                 iconColor="text-green-600 dark:text-green-400"

@@ -8,7 +8,7 @@ class DriverController {
     }
     async create(req, res) {
         try {
-            const { name, cnhNumber, cnhCategory, cnhExpiryDate, phone, email, specialLoadCertified, photoUrl, userId } = req.body;
+            const { name, cnhNumber, cnhCategory, cnhExpiryDate, phone, email, specialLoadCertified, photoUrl, admissionDate, userId } = req.body;
             // Validações
             if (!name || !cnhNumber || !cnhCategory || !cnhExpiryDate) {
                 return res.status(400).json({ success: false, error: "Missing required fields" });
@@ -28,6 +28,7 @@ class DriverController {
                 email,
                 specialLoadCertified,
                 photoUrl,
+                admissionDate: admissionDate ? new Date(admissionDate) : undefined,
             });
             res.status(201).json({ success: true, data: driver });
         }
@@ -85,9 +86,16 @@ class DriverController {
     async getCurrentVehicle(req, res) {
         try {
             const { driverId } = req.params;
-            const vehicle = await this.driverService.getCurrentVehicle(driverId);
+            // Resolve driver ID (could be passed as userId)
+            let resolvedDriverId = driverId;
+            const driverByUserId = await this.driverService.getByUserId(driverId);
+            if (driverByUserId) {
+                resolvedDriverId = driverByUserId.id;
+            }
+            const vehicle = await this.driverService.getCurrentVehicle(resolvedDriverId);
             if (!vehicle) {
-                return res.status(404).json({ success: false, error: "No vehicle assigned" });
+                // Return null data instead of 404 to allow UI to handle "no vehicle" gracefully
+                return res.json({ success: true, data: null });
             }
             res.json({ success: true, data: vehicle });
         }

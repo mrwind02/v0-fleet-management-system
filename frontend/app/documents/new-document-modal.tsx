@@ -43,9 +43,10 @@ type FormValues = z.infer<typeof formSchema>
 interface NewDocumentModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
-export function NewDocumentModal({ open, onOpenChange }: NewDocumentModalProps) {
+export function NewDocumentModal({ open, onOpenChange, onSuccess }: NewDocumentModalProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -88,6 +89,7 @@ export function NewDocumentModal({ open, onOpenChange }: NewDocumentModalProps) 
       toast.success("Documento cadastrado com sucesso!")
       onOpenChange(false)
       form.reset()
+      onSuccess?.()
       // Force page reload to fetch new data (in a real app, use a callback or context)
       window.location.reload()
     } catch (error) {

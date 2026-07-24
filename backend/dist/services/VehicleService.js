@@ -4,8 +4,8 @@ exports.VehicleService = void 0;
 const database_1 = require("../config/database");
 class VehicleService {
     async create(vehicleData) {
-        const result = await (0, database_1.query)(`INSERT INTO vehicles (plate, renavam, brand, model, year, color, transport_type, chassis_number, load_capacity, observations)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        const result = await (0, database_1.query)(`INSERT INTO vehicles (plate, renavam, brand, model, year, color, transport_type, chassis_number, load_capacity, observations, unit_id, unit_name, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`, [
             vehicleData.plate,
             vehicleData.renavam,
@@ -17,15 +17,34 @@ class VehicleService {
             vehicleData.chassisNumber,
             vehicleData.loadCapacity,
             vehicleData.observations,
+            vehicleData.unitId,
+            vehicleData.unitName,
+            vehicleData.status || "operando",
         ]);
         return this.mapToVehicle(result.rows[0]);
     }
     async getAll(isActive) {
         let sql = `
-      SELECT v.*, d.name as driver_name, d.id as driver_id
+      SELECT 
+        v.*, 
+        d.name as driver_name, 
+        d.id as driver_id,
+        COALESCE(m.total_maint, 0) + COALESCE(f.total_fuel, 0) as monthly_cost
       FROM vehicles v
       LEFT JOIN vehicle_driver_assignment vda ON v.id = vda.vehicle_id AND vda.is_current = true
       LEFT JOIN drivers d ON vda.driver_id = d.id
+      LEFT JOIN (
+        SELECT vehicle_id, SUM(cost) as total_maint 
+        FROM maintenance_records 
+        WHERE DATE_TRUNC('month', maintenance_date) = DATE_TRUNC('month', CURRENT_DATE)
+        GROUP BY vehicle_id
+      ) m ON v.id = m.vehicle_id
+      LEFT JOIN (
+        SELECT vehicle_id, SUM(cost) as total_fuel 
+        FROM fuel_records 
+        WHERE DATE_TRUNC('month', fuel_date) = DATE_TRUNC('month', CURRENT_DATE)
+        GROUP BY vehicle_id
+      ) f ON v.id = f.vehicle_id
     `;
         const params = [];
         if (isActive !== undefined) {
@@ -48,9 +67,10 @@ class VehicleService {
         const updates = [];
         const values = [];
         let paramCount = 1;
+        const excludedFields = ["id", "created_at", "updated_at", "driver_name", "driver_id", "monthly_cost", "is_active", "purchase_date"];
         Object.entries(vehicleData).forEach(([key, value]) => {
             const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
-            if (snakeKey !== "id" && snakeKey !== "created_at") {
+            if (!excludedFields.includes(snakeKey)) {
                 updates.push(`${snakeKey} = $${paramCount}`);
                 values.push(value);
                 paramCount++;
@@ -81,11 +101,15 @@ class VehicleService {
             chassisNumber: row.chassis_number,
             loadCapacity: row.load_capacity,
             observations: row.observations,
+            unitId: row.unit_id,
+            unitName: row.unit_name,
+            status: row.status,
             isActive: row.is_active,
             createdAt: row.created_at,
             updatedAt: row.updated_at,
             driverName: row.driver_name,
             driverId: row.driver_id,
+            monthlyCost: row.monthly_cost ? parseFloat(row.monthly_cost) : 0,
         };
     }
 }

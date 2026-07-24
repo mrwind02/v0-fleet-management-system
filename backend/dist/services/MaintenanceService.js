@@ -43,30 +43,33 @@ class MaintenanceService {
         return result.rows.map((row) => this.mapToMaintenance(row));
     }
     async getAll(filters) {
-        let sql = "SELECT * FROM maintenance_records WHERE 1=1";
+        let sql = `SELECT m.*, v.plate 
+               FROM maintenance_records m
+               LEFT JOIN vehicles v ON m.vehicle_id = v.id
+               WHERE 1=1`;
         const params = [];
         let paramCount = 1;
         if (filters?.vehicleId) {
-            sql += ` AND vehicle_id = $${paramCount}`;
+            sql += ` AND m.vehicle_id = $${paramCount}`;
             params.push(filters.vehicleId);
             paramCount++;
         }
         if (filters?.maintenanceType) {
-            sql += ` AND maintenance_type = $${paramCount}`;
+            sql += ` AND m.maintenance_type = $${paramCount}`;
             params.push(filters.maintenanceType);
             paramCount++;
         }
         if (filters?.startDate) {
-            sql += ` AND maintenance_date >= $${paramCount}`;
+            sql += ` AND m.maintenance_date >= $${paramCount}`;
             params.push(filters.startDate);
             paramCount++;
         }
         if (filters?.endDate) {
-            sql += ` AND maintenance_date <= $${paramCount}`;
+            sql += ` AND m.maintenance_date <= $${paramCount}`;
             params.push(filters.endDate);
             paramCount++;
         }
-        sql += " ORDER BY maintenance_date DESC";
+        sql += " ORDER BY m.maintenance_date DESC";
         const result = await (0, database_1.query)(sql, params);
         return result.rows.map((row) => this.mapToMaintenance(row));
     }

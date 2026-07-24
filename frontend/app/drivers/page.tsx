@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { driverService } from "@/services/api"
+import { driverService, vehicleService } from "@/services/api"
 import { driverDashboardService, DriverDashboardMetrics } from "@/services/driver-dashboard"
 import { AppLayout } from "@/components/layout/AppLayout"
 import { MetricCard } from "@/components/ui/metric-card"
@@ -51,22 +51,28 @@ export default function DriversPage() {
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      const [metricsData, driversRes] = await Promise.all([
+      const [metricsData, driversRes, vehiclesRes] = await Promise.all([
         driverDashboardService.getMetrics(),
-        driverService.getAll()
+        driverService.getAll(),
+        vehicleService.getAll()
       ])
       
       setMetrics(metricsData)
       
+      const vehicles = vehiclesRes.data.data || []
+      
       const mappedDrivers: ExtendedDriver[] = (driversRes.data.data || []).map((d: any) => {
+        // Encontrar veículo atual do motorista
+        const driverVehicle = vehicles.find((v: any) => v.driverId === d.id)
+        
         return {
           id: d.id,
           name: d.name,
-          registration: d.cnh ? d.cnh.substring(0, 6) : `N/A`,
-          cnhNumber: d.cnh || "N/A",
+          registration: d.cnhNumber ? d.cnhNumber.substring(0, 6) : "",
+          cnhNumber: d.cnhNumber || "",
           cnhCategory: d.cnhCategory || "E",
           
-          currentVehicle: d.isActive ? "Veículo Designado" : null, // From DB later
+          currentVehicle: driverVehicle ? `${driverVehicle.plate}` : null,
           unit: "Matriz - SP",
           status: d.isActive ? "Em Operação" : "Disponível",
           score: 100, // Real score calculation later
@@ -106,7 +112,7 @@ export default function DriversPage() {
             </div>
             <div className="flex flex-col">
               <span className="font-semibold text-foreground text-xs">{d.name}</span>
-              <span className="text-muted-foreground text-[10px]">{d.registration}</span>
+              {d.registration && <span className="text-muted-foreground text-[10px]">MT-{d.registration}</span>}
             </div>
           </div>
         )
@@ -117,7 +123,7 @@ export default function DriversPage() {
       header: "CNH",
       cell: ({ row }) => (
         <div className="flex flex-col">
-          <span className="font-medium text-xs">{row.original.cnhNumber}</span>
+          {row.original.cnhNumber && <span className="font-medium text-xs">{row.original.cnhNumber}</span>}
           <span className="text-[10px] text-muted-foreground">Cat. {row.original.cnhCategory}</span>
         </div>
       )
@@ -127,7 +133,7 @@ export default function DriversPage() {
       header: "Veículo Atual",
       cell: ({ row }) => (
         <span className="text-xs">
-          {row.original.currentVehicle || <span className="text-muted-foreground italic">Sem veículo</span>}
+          {row.original.currentVehicle ? row.original.currentVehicle : <span className="text-muted-foreground italic">Sem veículo</span>}
         </span>
       )
     },

@@ -15,7 +15,12 @@ const PORT = process.env.PORT || 3000;
 // Middlewares
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
-    origin: ["http://localhost:3000", "http://localhost:3001", process.env.CORS_ORIGIN || "*"],
+    origin: [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://frotaone.vercel.app",
+        process.env.CORS_ORIGIN || "*"
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
@@ -127,3 +132,4 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 exports.default = app;
+// restart trigger

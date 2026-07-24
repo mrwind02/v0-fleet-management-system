@@ -27,6 +27,16 @@ router.post("/", authenticateToken, authorize("admin", "manager", "driver"), asy
             odometerReading,
             liters,
             cost,
+            unitId,
+            fuelType,
+            costPerLiter,
+            paymentMethod,
+            costCenter,
+            fleetCard,
+            receiptUrl,
+            notes,
+            city,
+            uf
         } = req.body
 
         if (!vehicleId || !fuelDate || !gasStationName || !odometerReading || !liters || !cost) {
@@ -42,6 +52,16 @@ router.post("/", authenticateToken, authorize("admin", "manager", "driver"), asy
             odometerReading: Number.parseFloat(odometerReading),
             liters: Number.parseFloat(liters),
             cost: Number.parseFloat(cost),
+            unitId,
+            fuelType,
+            costPerLiter: costPerLiter ? Number.parseFloat(costPerLiter) : undefined,
+            paymentMethod,
+            costCenter,
+            fleetCard,
+            receiptUrl,
+            notes,
+            city,
+            uf
         })
 
         res.status(201).json({ success: true, data: record })
