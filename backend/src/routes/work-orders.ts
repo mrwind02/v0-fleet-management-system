@@ -250,6 +250,11 @@ router.post('/', async (req, res) => {
       VALUES ($1, 'created', 'Ordem de Serviço criada', $2, $3)
     `, [wo.id, 'Aberta', 'Sistema']);
 
+    // Update vehicle status
+    if (vehicle_id) {
+      await client.query(`UPDATE vehicles SET status = 'manutencao' WHERE id = $1`, [vehicle_id]);
+    }
+
     await client.query('COMMIT');
     res.status(201).json(wo);
   } catch (error) {
@@ -338,6 +343,11 @@ router.patch('/:id/status', async (req, res) => {
       INSERT INTO work_order_history (work_order_id, event_type, description, old_value, new_value, user_name)
       VALUES ($1, 'status_change', $2, $3, $4, $5)
     `, [id, `Status alterado de "${oldStatus}" para "${status}"`, oldStatus, status, user_name || 'Sistema']);
+
+    // Auto update vehicle status back if completed/canceled
+    if (result.rows[0].vehicle_id && (status === 'Concluída' || status === 'Cancelada')) {
+      await client.query(`UPDATE vehicles SET status = 'operando' WHERE id = $1`, [result.rows[0].vehicle_id]);
+    }
 
     await client.query('COMMIT');
     res.json(result.rows[0]);

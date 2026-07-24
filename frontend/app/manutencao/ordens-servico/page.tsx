@@ -26,8 +26,7 @@ import {
   ClipboardList, Wrench, Package, AlertTriangle, DollarSign, Truck,
   Plus, Download, Upload, MoreHorizontal, Clock, Building2, TrendingDown
 } from "lucide-react"
-import { format, differenceInDays } from "date-fns"
-import { ptBR } from "date-fns/locale"
+
 
 const STATUS_COLORS: Record<string, string> = {
   "Aberta": "#3b82f6",
@@ -113,7 +112,7 @@ export default function WorkOrdersPage() {
   }
 
   const fmtCurrency = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
-  const fmtDate = (d?: string) => d ? format(new Date(d), "dd/MM/yyyy", { locale: ptBR }) : "-"
+  const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString("pt-BR") : "-"
 
   const columns: ColumnDef<WorkOrder>[] = [
     {

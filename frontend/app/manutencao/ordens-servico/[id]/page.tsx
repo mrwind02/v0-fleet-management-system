@@ -23,8 +23,7 @@ import {
   Clock, DollarSign, ArrowLeft, CheckCircle, Package, FileText, ClipboardCheck,
   History, Shield, AlertTriangle
 } from "lucide-react"
-import { format, differenceInDays } from "date-fns"
-import { ptBR } from "date-fns/locale"
+
 import { toast } from "sonner"
 
 const OS_STEPS: StepperStep[] = [
@@ -66,12 +65,12 @@ function fmtCurrency(v: number) {
 
 function fmtDate(d?: string) {
   if (!d) return "—"
-  return format(new Date(d), "dd/MM/yyyy", { locale: ptBR })
+  return new Date(d).toLocaleDateString("pt-BR")
 }
 
 function fmtDatetime(d?: string) {
   if (!d) return "—"
-  return format(new Date(d), "dd/MM/yyyy HH:mm", { locale: ptBR })
+  return new Date(d).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
 }
 
 interface SummaryCardProps {
@@ -162,7 +161,7 @@ export default function WorkOrderDetailPage() {
 
   const currentStep = STATUS_TO_STEP[wo.status] ?? 0
   const openedDate = wo.opened_at ? new Date(wo.opened_at) : new Date()
-  const daysOpen = differenceInDays(new Date(), openedDate)
+  const daysOpen = Math.floor((new Date().getTime() - openedDate.getTime()) / (1000 * 3600 * 24))
 
   const costData = [
     { name: "Peças", value: wo.cost_parts || 0 },
