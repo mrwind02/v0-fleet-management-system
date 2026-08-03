@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Outfit } from "next/font/google"
 import { AuthProvider } from "@/components/providers/AuthProvider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { ThemeProvider } from "@/components/providers/ThemeProvider"
@@ -8,11 +8,22 @@ import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/utils/utils"
 import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"], display: "swap" })
+const outfit = Outfit({ 
+  subsets: ["latin"], 
+  display: "swap",
+  weight: ["500", "600", "700", "800", "900"],
+  variable: "--font-outfit"
+})
 
 export const metadata: Metadata = {
-  title: "FrotaOne - Gerenciamento de Frota",
-  description: "Sistema completo de gerenciamento de frota e manutenção",
+  title: "FrotaOne - Gestão Inteligente de Frotas",
+  description: "Plataforma inteligente de gerenciamento de frota, manutenção e despesas operacionais.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 }
 
 export default function RootLayout({
@@ -22,7 +33,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={cn(inter.className, "overflow-hidden")}>
+      <body className={cn(inter.className, outfit.variable, "overflow-hidden")}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <TooltipProvider>{children}</TooltipProvider>

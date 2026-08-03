@@ -182,7 +182,7 @@ export default function DriverDetailsPage() {
           <MetricCard title="Disponibilidade" value={driver.isActive ? "Em Operação" : "Inativo"} icon={<CalendarClock className="h-4 w-4" />} iconBgColor={driver.isActive ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100"} iconColor={driver.isActive ? "text-green-600" : "text-red-600"} />
           <MetricCard title="CNH" value={`Válida (Cat ${driver.cnhCategory || "E"})`} icon={<FileCheck className="h-4 w-4" />} iconBgColor="bg-blue-100 dark:bg-blue-900/30" iconColor="text-blue-600" />
           <MetricCard title="Pontuação" value="96" icon={<CheckCircle className="h-4 w-4" />} iconBgColor="bg-green-100 dark:bg-green-900/30" iconColor="text-green-600" />
-          <MetricCard title="Multas" value="0" icon={<AlertTriangle className="h-4 w-4" />} />
+          <MetricCard title="Multas" value={finesRecords.length.toString()} icon={<AlertTriangle className="h-4 w-4" />} iconBgColor={finesRecords.length > 0 ? "bg-rose-100 dark:bg-rose-900/30" : undefined} iconColor={finesRecords.length > 0 ? "text-rose-600" : undefined} />
           <MetricCard title="Tempo Empresa" value={tempoEmpresa} icon={<Clock className="h-4 w-4" />} />
         </div>
 

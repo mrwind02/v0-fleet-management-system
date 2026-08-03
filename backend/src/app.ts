@@ -3,15 +3,24 @@ import cors from "cors"
 import helmet from "helmet"
 import morgan from "morgan"
 import dotenv from "dotenv"
+import path from "path"
 import { setupRoutes } from "./routes"
 
 dotenv.config()
 
 const app = express()
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3001
 
 // Middlewares
-app.use(helmet())
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "frame-ancestors": ["'self'", "http://localhost:3000", "https://frotaone.vercel.app"],
+    },
+  },
+}))
 app.use(cors({
   origin: [
     "http://localhost:3000",
@@ -19,13 +28,16 @@ app.use(cors({
     "https://frotaone.vercel.app",
     process.env.CORS_ORIGIN || "*"
   ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }))
 app.use(morgan("combined"))
 app.use(express.json({ limit: "50mb" }))
 app.use(express.urlencoded({ limit: "50mb", extended: true }))
+
+// Serve static files from uploads folder
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")))
 
 setupRoutes(app)
 
@@ -132,7 +144,7 @@ app.use((req, res) => {
   res.status(404).json({ success: false, error: "Endpoint not found" })
 })
 
-app.listen(PORT, () => {
+app.listen(Number(PORT), "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`)
 })
 

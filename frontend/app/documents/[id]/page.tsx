@@ -12,88 +12,118 @@ import { Badge } from "@/components/ui/badge"
 import { 
   Settings2, Download, Copy, AlertTriangle, FileText, 
   CheckCircle, CalendarClock, User, Clock, ShieldCheck,
-  RefreshCw, Car, Building, Shield
+  RefreshCw, Car, Building, Shield, MoreVertical, Edit, Trash
 } from "lucide-react"
 import { StatusPill } from "@/components/ui/status-pill"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { NewDocumentModal } from "../new-document-modal"
+import { toast } from "sonner"
+import * as React from "react"
+
+import useSWR from "swr"
+import { documentService } from "@/services/document.service"
 
 export default function DocumentDetailsPage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
 
-  // Mock data for the specific document
-  const mockDocument = {
-    id: id,
-    name: "Apólice de Seguro Frota 2024",
-    category: "Seguro",
-    status: "Válido",
-    relatedTo: "Mapfre Seguros",
-    number: "POL-9988776655",
-    version: "v2.1",
-    daysRemaining: 45,
-    responsible: "Admin (João)",
-    lastUpdate: "Há 2 dias"
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+
+  const { data: documentData, isLoading } = useSWR(
+    id ? `document_detail_${id}` : null,
+    () => documentService.getDocumentById(id),
+    { revalidateOnFocus: false }
+  )
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex h-full items-center justify-center animate-pulse text-muted-foreground">
+          Carregando documento...
+        </div>
+      </AppLayout>
+    )
   }
+
+  if (!documentData) {
+    return (
+      <AppLayout>
+        <div className="text-center py-12">
+          <h2 className="text-xl font-bold">Documento não encontrado</h2>
+          <Button variant="outline" className="mt-4" onClick={() => router.push('/documents')}>Voltar</Button>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  const daysRemaining = documentData.expiry_date 
+    ? Math.ceil((new Date(documentData.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) 
+    : 0;
 
   const mockTimelineEvents: TimelineEvent[] = [
     {
-      id: "1",
-      date: "Hoje, 10:30",
-      title: "Documento Aprovado",
-      description: "Revisão jurídica concluída.",
+      id: "created",
+      date: documentData.created_at ? new Date(documentData.created_at).toLocaleDateString('pt-BR') : "Desconhecido",
+      title: "Documento Criado",
+      description: "Documento registrado no sistema.",
       icon: <CheckCircle className="w-4 h-4" />,
       iconBg: "bg-green-100 dark:bg-green-900/30",
       iconColor: "text-green-600"
-    },
-    {
-      id: "2",
-      date: "Ontem, 16:45",
-      title: "Nova versão enviada",
-      description: "Versão v2.1 carregada por Admin.",
-      icon: <RefreshCw className="w-4 h-4" />,
-      iconBg: "bg-blue-100 dark:bg-blue-900/30",
-      iconColor: "text-blue-600"
-    },
-    {
-      id: "3",
-      date: "Há 5 dias",
-      title: "Comentário adicionado",
-      description: "\"Falta assinatura do diretor na página 3.\"",
-      icon: <FileText className="w-4 h-4" />
     }
   ]
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true)
+      await documentService.deleteDocument(id)
+      toast.success("Documento excluído com sucesso")
+      router.push('/documents')
+    } catch (error) {
+      toast.error("Erro ao excluir documento")
+      setIsDeleting(false)
+    }
+  }
+
+  const fileUrlStr = documentData.file_url && documentData.file_url.startsWith('/') 
+    ? `http://localhost:3001${documentData.file_url}` 
+    : documentData.file_url;
 
   return (
     <AppLayout>
       <div className="flex flex-col gap-4 pb-4 w-full animate-in fade-in duration-300">
         
         <PageHeader 
-          breadcrumbs={[{ label: "Frota", href: "/vehicles" }, { label: "Documentos", href: "/documents" }, { label: "Visão 360º" }]}
-          title={mockDocument.name}
-          description={`Gerenciamento da versão ${mockDocument.version} • ${mockDocument.number}`}
+          breadcrumbs={[{ label: "Frota", href: "/vehicles" }, { label: "Documentos", href: "/documents" }, { label: "Detalhes" }]}
+          title={documentData.name}
+          description={`Documento • ${documentData.number || "Sem número"}`}
           actions={
-            <>
-              <Button variant="outline" className="h-9 text-xs shadow-sm">
-                <Download className="mr-2 h-4 w-4" /> Download
-              </Button>
-              <Button variant="outline" className="h-9 text-xs shadow-sm">
-                <Copy className="mr-2 h-4 w-4" /> Nova Versão
-              </Button>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white h-9 text-xs font-semibold shadow-sm">
-                <Settings2 className="mr-2 h-4 w-4" /> Editar
-              </Button>
-            </>
+            <Button variant="outline" size="sm" onClick={() => router.push('/documents')} className="h-8 gap-1.5 font-medium">
+              <span className="mr-1">&larr;</span> Voltar para Documentos
+            </Button>
           }
         />
 
         {/* Resumo Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-2">
-          <MetricCard title="Categoria" value={mockDocument.category} icon={<FileText className="h-4 w-4" />} iconBgColor="bg-blue-100" iconColor="text-blue-600" />
-          <MetricCard title="Situação" value={mockDocument.status} icon={<CheckCircle className="h-4 w-4" />} iconBgColor="bg-green-100" iconColor="text-green-600" />
-          <MetricCard title="Dias Restantes" value={`${mockDocument.daysRemaining} dias`} icon={<CalendarClock className="h-4 w-4" />} />
-          <MetricCard title="Responsável" value={mockDocument.responsible} icon={<User className="h-4 w-4" />} />
-          <MetricCard title="Última Atualização" value={mockDocument.lastUpdate} icon={<Clock className="h-4 w-4" />} />
-          <MetricCard title="Versão Atual" value={mockDocument.version} icon={<ShieldCheck className="h-4 w-4" />} />
+          <MetricCard title="Categoria" value={documentData.category} icon={<FileText className="h-4 w-4" />} iconBgColor="bg-blue-100" iconColor="text-blue-600" />
+          <MetricCard title="Situação" value={documentData.status} icon={<CheckCircle className="h-4 w-4" />} iconBgColor="bg-green-100" iconColor="text-green-600" />
+          <MetricCard title="Dias Restantes" value={documentData.status === "Vencido" ? "0 dias" : `${daysRemaining} dias`} icon={<CalendarClock className="h-4 w-4" />} />
+          <MetricCard title="Responsável" value={documentData.responsible || "Não informado"} icon={<User className="h-4 w-4" />} />
+          <MetricCard title="Última Atualização" value={documentData.updated_at ? new Date(documentData.updated_at).toLocaleDateString('pt-BR') : "-"} icon={<Clock className="h-4 w-4" />} />
+          <MetricCard title="Referência" value={(documentData as any).vehicle_plate || (documentData as any).driver_name || documentData.related_to || "-"} icon={<ShieldCheck className="h-4 w-4" />} />
         </div>
 
         <div className="bg-card border rounded-xl shadow-sm overflow-hidden flex flex-col h-full min-h-[600px] mt-2">
@@ -116,11 +146,13 @@ export default function DocumentDetailsPage() {
                   <div className="lg:col-span-2">
                     <h3 className="text-sm font-semibold mb-4">Visualizador do Documento</h3>
                     <FilePreviewCard 
-                      fileName="apolice_frota_2024_assinada.pdf"
-                      fileSize="2.4 MB"
+                      fileName={documentData.name ? `${documentData.name}${documentData.name.toLowerCase().endsWith('.pdf') ? '' : '.pdf'}` : "documento_anexado.pdf"}
+                      fileSize="-"
                       fileType="pdf"
-                      uploadedBy="Admin"
-                      uploadDate="15/10/2023"
+                      uploadedBy={documentData.responsible || "Admin"}
+                      uploadDate={documentData.created_at ? new Date(documentData.created_at).toLocaleDateString('pt-BR') : "-"}
+                      fileUrl={fileUrlStr || "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iaiA8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PiBlbmRvYmogMiAwIG9iaiA8PC9UeXBlL1BhZ2VzL0NvdW50IDEvS2lkc1szIDAgUl0+PiBlbmRvYmogMyAwIG9iaiA8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL01lZGlhQm94WzAgMCA2MTIgNzkyXS9SZXNvdXJjZXM8PC9Gb250PDwvRjEgNCAwIFI+Pj4+L0NvbnRlbnRzIDUgMCBSPj4gZW5kb2JqIDQgMCBvYmogPDwvVHlwZS9Gb250L1N1YnR5cGUvVHlwZTEvQmFzZUZvbnQvSGVsdmV0aWNhPj4gZW5kb2JqIDUgMCBvYmogPDwvTGVuZ3RoIDUzPj5zdHJlYW0KQlQKOTAgNzAwIFRECi9GMSAyNCBUZgooRG9jdW1lbnRvIGRlIERlbW9uc3RyYWNhbykgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2NiAwMDAwMCBuIAowMDAwMDAwMTI0IDAwMDAwIG4gCjAwMDAwMDAyNjEgMDAwMDAgbiAKMDAwMDAwMDM1MiAwMDAwMCBuIAp0cmFpbGVyCjw8L1Jvb3QgMSAwIFIvU2l6ZSA2Pj4Kc3RhcnR4cmVmCjQ1NgolJUVPRgo="}
+                      previewUrl={fileUrlStr || "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iaiA8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PiBlbmRvYmogMiAwIG9iaiA8PC9UeXBlL1BhZ2VzL0NvdW50IDEvS2lkc1szIDAgUl0+PiBlbmRvYmogMyAwIG9iaiA8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL01lZGlhQm94WzAgMCA2MTIgNzkyXS9SZXNvdXJjZXM8PC9Gb250PDwvRjEgNCAwIFI+Pj4+L0NvbnRlbnRzIDUgMCBSPj4gZW5kb2JqIDQgMCBvYmogPDwvVHlwZS9Gb250L1N1YnR5cGUvVHlwZTEvQmFzZUZvbnQvSGVsdmV0aWNhPj4gZW5kb2JqIDUgMCBvYmogPDwvTGVuZ3RoIDUzPj5zdHJlYW0KQlQKOTAgNzAwIFRECi9GMSAyNCBUZgooRG9jdW1lbnRvIGRlIERlbW9uc3RyYWNhbykgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2NiAwMDAwMCBuIAowMDAwMDAwMTI0IDAwMDAwIG4gCjAwMDAwMDAyNjEgMDAwMDAgbiAKMDAwMDAwMDM1MiAwMDAwMCBuIAp0cmFpbGVyCjw8L1Jvb3QgMSAwIFIvU2l6ZSA2Pj4Kc3RhcnR4cmVmCjQ1NgolJUVPRgo="}
                     />
                   </div>
                   <div className="lg:col-span-1 border-l pl-6">
@@ -128,7 +160,7 @@ export default function DocumentDetailsPage() {
                       <Clock className="w-4 h-4 text-muted-foreground" /> 
                       Eventos Recentes
                     </h3>
-                    <Timeline events={mockTimelineEvents} className="mt-4" />
+                    <Timeline events={mockTimelineEvents} className="mt-4" compact={true} />
                   </div>
                 </div>
               </TabsContent>
@@ -137,36 +169,32 @@ export default function DocumentDetailsPage() {
                 <div className="max-w-2xl">
                   <h3 className="text-sm font-semibold mb-4">Entidades Vinculadas</h3>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 text-blue-700 rounded-lg"><Car className="w-4 h-4" /></div>
-                        <div>
-                          <p className="text-sm font-semibold">Scania R450 (XYZ-9876)</p>
-                          <p className="text-xs text-muted-foreground">Veículo</p>
+                    {documentData.vehicle_id ? (
+                      <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => router.push(`/vehicles/${documentData.vehicle_id}`)}>
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 text-blue-700 rounded-lg"><Car className="w-4 h-4" /></div>
+                          <div>
+                            <p className="text-sm font-semibold">Veículo {(documentData as any).vehicle_plate}</p>
+                            <p className="text-xs text-muted-foreground">Veículo</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline">Ver Veículo</Badge>
+                      </div>
+                    ) : documentData.driver_id ? (
+                      <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-orange-100 text-orange-700 rounded-lg"><User className="w-4 h-4" /></div>
+                          <div>
+                            <p className="text-sm font-semibold">Motorista {(documentData as any).driver_name}</p>
+                            <p className="text-xs text-muted-foreground">Colaborador</p>
+                          </div>
                         </div>
                       </div>
-                      <Badge variant="outline">Ver Veículo</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-100 text-purple-700 rounded-lg"><User className="w-4 h-4" /></div>
-                        <div>
-                          <p className="text-sm font-semibold">João Silva</p>
-                          <p className="text-xs text-muted-foreground">Motorista Principal</p>
-                        </div>
+                    ) : (
+                      <div className="text-center p-6 border rounded-lg bg-muted/10 text-muted-foreground text-sm">
+                        Nenhuma entidade vinculada diretamente a este documento.
                       </div>
-                      <Badge variant="outline">Ver Motorista</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-100 text-green-700 rounded-lg"><Shield className="w-4 h-4" /></div>
-                        <div>
-                          <p className="text-sm font-semibold">Mapfre Seguros</p>
-                          <p className="text-xs text-muted-foreground">Fornecedor / Seguradora</p>
-                        </div>
-                      </div>
-                      <Badge variant="outline">Ver Fornecedor</Badge>
-                    </div>
+                    )}
                   </div>
                 </div>
               </TabsContent>
@@ -185,25 +213,13 @@ export default function DocumentDetailsPage() {
                     </thead>
                     <tbody className="divide-y">
                       <tr className="bg-blue-50/20">
-                        <td className="px-4 py-3 font-semibold">v2.1 (Atual)</td>
-                        <td className="px-4 py-3">Admin</td>
-                        <td className="px-4 py-3">Ontem, 16:45</td>
-                        <td className="px-4 py-3 text-muted-foreground">Ajuste na cláusula 4.</td>
-                        <td className="px-4 py-3 text-right"><Button variant="ghost" size="sm" className="h-7 text-xs">Download</Button></td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 py-3 font-medium text-muted-foreground">v2.0</td>
-                        <td className="px-4 py-3">João RH</td>
-                        <td className="px-4 py-3">15/10/2023</td>
-                        <td className="px-4 py-3 text-muted-foreground">Nova apólice 2024.</td>
-                        <td className="px-4 py-3 text-right"><Button variant="ghost" size="sm" className="h-7 text-xs">Restaurar</Button></td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 py-3 font-medium text-muted-foreground">v1.0</td>
-                        <td className="px-4 py-3">Admin</td>
-                        <td className="px-4 py-3">10/10/2022</td>
-                        <td className="px-4 py-3 text-muted-foreground">Documento original.</td>
-                        <td className="px-4 py-3 text-right"><Button variant="ghost" size="sm" className="h-7 text-xs">Restaurar</Button></td>
+                        <td className="px-4 py-3 font-semibold">Atual</td>
+                        <td className="px-4 py-3">{documentData.responsible || "Sistema"}</td>
+                        <td className="px-4 py-3">{documentData.created_at ? new Date(documentData.created_at).toLocaleDateString('pt-BR') : "-"}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{documentData.notes || "Documento atual."}</td>
+                        <td className="px-4 py-3 text-right">
+                          {documentData.file_url && <Button variant="ghost" size="sm" className="h-7 text-xs">Download</Button>}
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -227,6 +243,37 @@ export default function DocumentDetailsPage() {
         </div>
 
       </div>
+
+      <NewDocumentModal 
+        open={isEditModalOpen} 
+        onOpenChange={setIsEditModalOpen} 
+        document={documentData}
+      />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o documento
+              <span className="font-semibold text-foreground"> {documentData.name}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }} 
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   )
 }

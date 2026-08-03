@@ -40,7 +40,7 @@ class MaintenanceService {
         }
         sql += " ORDER BY maintenance_date DESC";
         const result = await (0, database_1.query)(sql, params);
-        return result.rows.map((row) => this.mapToMaintenance(row));
+        return (result.rows || []).map((row) => this.mapToMaintenance(row));
     }
     async getAll(filters) {
         let sql = `SELECT m.*, v.plate 
@@ -71,7 +71,7 @@ class MaintenanceService {
         }
         sql += " ORDER BY m.maintenance_date DESC";
         const result = await (0, database_1.query)(sql, params);
-        return result.rows.map((row) => this.mapToMaintenance(row));
+        return (result.rows || []).map((row) => this.mapToMaintenance(row));
     }
     async getById(id) {
         const result = await (0, database_1.query)("SELECT * FROM maintenance_records WHERE id = $1", [id]);

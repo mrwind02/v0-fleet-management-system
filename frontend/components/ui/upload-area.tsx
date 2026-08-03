@@ -9,12 +9,26 @@ export interface UploadAreaProps {
   onFileSelect?: (file: File) => void
   error?: boolean
   accept?: string
+  label?: string
+  hint?: string
 }
 
-export function UploadArea({ className, onFileSelect, error, accept = "image/*,.pdf" }: UploadAreaProps) {
+export function UploadArea({ className, onFileSelect, error, accept = "image/*,.pdf", label, hint }: UploadAreaProps) {
   const [dragActive, setDragActive] = React.useState(false)
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
+
+  // Format hint from accept prop if hint is not explicitly provided
+  const displayHint = React.useMemo(() => {
+    if (hint) return hint
+    if (!accept || accept.includes("*")) return "PDF, JPG, PNG até 10MB"
+    const exts = accept
+      .split(",")
+      .map((e) => e.replace(".", "").toUpperCase().trim())
+      .filter(Boolean)
+      .join(", ")
+    return `Arquivos ${exts} até 10MB`
+  }, [accept, hint])
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -56,7 +70,7 @@ export function UploadArea({ className, onFileSelect, error, accept = "image/*,.
       {!selectedFile ? (
         <div
           className={cn(
-            "relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg bg-muted/20 transition-colors",
+            "relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg bg-muted/20 transition-colors cursor-pointer",
             dragActive ? "border-blue-500 bg-blue-50 dark:bg-blue-900/10" : "border-muted-foreground/25 hover:bg-muted/50",
             error && "border-destructive bg-destructive/5"
           )}
@@ -74,8 +88,8 @@ export function UploadArea({ className, onFileSelect, error, accept = "image/*,.
             onChange={handleChange}
           />
           <UploadCloud className={cn("h-8 w-8 mb-3", error ? "text-destructive" : "text-muted-foreground")} />
-          <p className="text-sm font-medium mb-1">Clique ou arraste o arquivo aqui</p>
-          <p className="text-xs text-muted-foreground">PDF, JPG, PNG até 10MB</p>
+          <p className="text-sm font-medium mb-1">{label || "Clique ou arraste o arquivo aqui"}</p>
+          <p className="text-xs text-muted-foreground">{displayHint}</p>
         </div>
       ) : (
         <div className="flex items-center gap-3 p-3 border rounded-lg bg-card">

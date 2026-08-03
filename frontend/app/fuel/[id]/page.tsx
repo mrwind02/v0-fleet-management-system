@@ -12,37 +12,83 @@ import { MetricCard } from "@/components/ui/metric-card"
 import { Timeline } from "@/components/ui/timeline"
 import { InsightCard } from "@/components/ui/insight-card"
 import { FuelFormSheet } from "@/components/fuel/FuelFormSheet"
+import useSWR from "swr"
 
 export default function FuelDetailsPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
 
-  const [record, setRecord] = useState<any>(null)
-  const [vehicle, setVehicle] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isFormOpen, setIsFormOpen] = useState(false)
 
-  useEffect(() => {
-    if (id) fetchDetails()
-  }, [id])
-
   const fetchDetails = async () => {
+    let data = null
     try {
-      setIsLoading(true)
       const res = await fuelService.getById(id)
-      setRecord(res.data.data)
-
-      if (res.data.data.vehicleId) {
-        const vRes = await vehicleService.getById(res.data.data.vehicleId)
-        setVehicle(vRes.data.data)
-      }
+      data = res.data?.data || res.data
     } catch (error) {
-      console.error(error)
-    } finally {
-      setIsLoading(false)
+      console.warn(error)
     }
+
+    if (!data && typeof window !== "undefined") {
+      const savedLocal = localStorage.getItem("frotaone_fuel_records")
+      if (savedLocal) {
+        try {
+          const parsed = JSON.parse(savedLocal)
+          data = parsed.find((r: any) => String(r.id) === String(id))
+        } catch (e) {}
+      }
+    }
+    
+    let veh = null
+    let avgConsumption = null
+    const vid = data?.vehicleId || data?.vehicle_id
+    if (vid) {
+      try {
+        const vRes = await vehicleService.getById(vid)
+        veh = vRes.data?.data || vRes.data
+      } catch (e) {}
+      
+      if (!veh && typeof window !== "undefined") {
+        const savedCreated = localStorage.getItem("frotaone_created_vehicles")
+        if (savedCreated) {
+          try {
+            const parsed = JSON.parse(savedCreated)
+            veh = parsed.find((v: any) => String(v.id) === String(vid))
+          } catch (e) {}
+        }
+      }
+
+      // Calcula o consumo em relação ao abastecimento anterior
+      try {
+        const fuelRes = await fuelService.getAll()
+        const allFuelings = fuelRes.data?.data || fuelRes.data || []
+        const vehicleFuelings = allFuelings
+          .filter((f: any) => String(f.vehicleId) === String(vid) || String(f.vehicle_id) === String(vid))
+          .sort((a: any, b: any) => Number(a.odometerReading) - Number(b.odometerReading))
+        
+        const currentIndex = vehicleFuelings.findIndex((f: any) => String(f.id) === String(id))
+        if (currentIndex > 0) {
+          const current = vehicleFuelings[currentIndex]
+          const previous = vehicleFuelings[currentIndex - 1]
+          
+          const parseOdo = (val: any) => Number(String(val).replace('.', '').replace(',', ''))
+          const dist = parseOdo(current.odometerReading) - parseOdo(previous.odometerReading)
+          
+          const liters = Number(current.liters || current.volume || current.quantity)
+          if (dist > 0 && liters > 0) {
+            avgConsumption = dist / liters
+          }
+        }
+      } catch (e) {}
+    }
+
+    return { record: data, vehicle: veh, avgConsumption }
   }
+
+  const { data, isLoading, mutate } = useSWR(id ? `fuel_detail_${id}` : null, fetchDetails, { revalidateOnFocus: false })
+  const record = data?.record
+  const vehicle = data?.vehicle
 
   if (isLoading) {
     return (
@@ -228,17 +274,17 @@ export default function FuelDetailsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <InsightCard 
                       title="Consumo desde o último"
-                      value="4.5 km/L"
-                      subtitle="Baseado no hodômetro"
-                      trend="Eficiente"
-                      isPositive={true}
+                      value={data?.avgConsumption ? `${data.avgConsumption.toFixed(1)} km/L` : "N/A"}
+                      subtitle={data?.avgConsumption ? "Baseado no hodômetro" : "Sem dados anteriores suficientes"}
+                      trend={data?.avgConsumption ? (data.avgConsumption > 6.0 ? "Eficiente" : "Abaixo da média") : ""}
+                      isPositive={data?.avgConsumption ? data.avgConsumption > 6.0 : true}
                     />
                     <InsightCard 
                       title="Anomalia detectada?"
-                      value="Nenhuma"
-                      subtitle="O consumo está dentro do padrão esperado"
-                      trend="Seguro"
-                      isPositive={true}
+                      value={data?.avgConsumption ? (data.avgConsumption < 4.0 ? "Possível" : "Nenhuma") : "N/A"}
+                      subtitle={data?.avgConsumption ? (data.avgConsumption < 4.0 ? "Consumo excessivamente baixo" : "O consumo está dentro do padrão esperado") : "-"}
+                      trend={data?.avgConsumption ? (data.avgConsumption < 4.0 ? "Alerta" : "Seguro") : ""}
+                      isPositive={data?.avgConsumption ? data.avgConsumption >= 4.0 : true}
                     />
                   </div>
                 </div>
@@ -307,7 +353,7 @@ export default function FuelDetailsPage() {
         onOpenChange={setIsFormOpen} 
         onSuccess={() => {
           setIsFormOpen(false)
-          fetchDetails()
+          mutate()
         }}
         editData={record}
       />

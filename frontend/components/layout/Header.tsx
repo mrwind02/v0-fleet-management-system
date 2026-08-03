@@ -7,6 +7,7 @@ import { GlobalSearch } from "./GlobalSearch"
 import { ThemeToggle } from "./ThemeToggle"
 import { UserNav } from "./UserNav"
 import { MobileSidebar } from "./MobileSidebar"
+import { HeaderNotifications } from "./HeaderNotifications"
 import { Button } from "@/components/ui/button"
 
 interface HeaderProps {
@@ -40,12 +41,7 @@ export function Header({ toggleSidebar }: HeaderProps) {
 
         {/* Right side controls */}
         <div className="flex items-center justify-end gap-x-2 lg:gap-x-4">
-          <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground" aria-label="Notificações">
-            <Bell className="h-5 w-5" aria-hidden="true" />
-            <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">
-              5
-            </span>
-          </Button>
+          <HeaderNotifications />
           
           <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full text-muted-foreground hidden sm:flex" aria-label="Ajuda">
             <HelpCircle className="h-5 w-5" aria-hidden="true" />

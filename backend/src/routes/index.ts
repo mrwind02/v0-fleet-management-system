@@ -12,6 +12,9 @@ import finesRoutes from "./fines"
 import documentsRoutes from "./documents"
 import dashboardRoutes from "./dashboard"
 import unitsRoutes from "./units"
+import expensesRoutes from "./expenses"
+import suppliersRoutes from "./suppliers"
+import notificationsRoutes from "./notifications"
 
 export function setupRoutes(app: any) {
   // Health check for monitoring
@@ -33,4 +36,7 @@ export function setupRoutes(app: any) {
   app.use("/api/documents", documentsRoutes)
   app.use("/api/dashboard", dashboardRoutes)
   app.use("/api/units", unitsRoutes)
+  app.use("/api/expenses", expensesRoutes)
+  app.use("/api/suppliers", suppliersRoutes)
+  app.use("/api/notifications", notificationsRoutes)
 }

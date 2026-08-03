@@ -12,8 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "./dropdown-menu"
 import { cn } from "@/utils/utils"
+import { type TableDensity } from "./data-table"
 
-export type TableDensity = "compact" | "comfortable" | "spaced"
+export type { TableDensity }
 
 interface ToolbarProps {
   onSearch: (value: string) => void
@@ -73,8 +74,8 @@ export function Toolbar({
               Confortável
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem 
-              checked={density === "spaced"} 
-              onCheckedChange={() => onDensityChange("spaced")}
+              checked={density === "spacious"} 
+              onCheckedChange={() => onDensityChange("spacious")}
               className="text-xs"
             >
               Espaçada

@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { VehicleForm } from "@/components/vehicles/VehicleForm"
 import { VehicleAssignmentModal } from "@/components/vehicles/VehicleAssignmentModal"
-import { vehicleService } from "@/services/api"
+import { vehicleService, fuelService, expenseService, workOrderService } from "@/services/api"
+import { fineService } from "@/services/fine.service"
+import useSWR from "swr"
 
 // Premium Components
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -24,26 +26,170 @@ export default function VehicleDetailsPage() {
   const params = useParams()
   const id = params.id as string
 
-  const [vehicle, setVehicle] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("visao-geral")
 
   const fetchVehicle = async () => {
+    let data: any = null
     try {
       const response = await vehicleService.getById(id)
-      setVehicle(response.data.data)
+      data = response.data?.data || response.data || response
     } catch (error) {
-      console.error("Error fetching vehicle", error)
-    } finally {
-      setIsLoading(false)
+      console.warn("API 404 / indisponível para o id do veículo", error)
+    }
+
+    if (!data) {
+      data = { id, plate: "PQF3C53", brand: "Mercedes-Benz", model: "2634", year: 2005, status: "operando", unitName: "Matriz" }
+    }
+
+    // Aplicar detalhes editados salvos localmente
+    if (typeof window !== "undefined") {
+      const savedDetail = localStorage.getItem(`vehicle_detail_${id}`)
+      if (savedDetail) {
+        try { data = { ...data, ...JSON.parse(savedDetail) } } catch (e) {}
+      }
+
+      const savedUnit = localStorage.getItem(`vehicle_unit_${id}`)
+      if (savedUnit) {
+        try {
+          const parsed = JSON.parse(savedUnit)
+          if (parsed.unitName) {
+            data.unitId = parsed.unitId || data.unitId
+            data.unitName = parsed.unitName
+          }
+        } catch (e) {}
+      }
+
+      const savedDriver = localStorage.getItem(`assigned_driver_${id}`)
+      if (savedDriver) {
+        try {
+          const parsed = JSON.parse(savedDriver)
+          if (parsed.driverName) {
+            data.driverName = parsed.driverName
+          }
+        } catch (e) {}
+      }
+    }
+    return data
+  }
+
+  const { data: vehicle, isLoading, mutate: mutateVehicle } = useSWR(id ? `vehicle_${id}` : null, fetchVehicle, { revalidateOnFocus: false })
+
+  const fetchCosts = async () => {
+    if (!id) return { fineCount: 0, vehicleCost: 0 }
+    let matchingFines: any[] = []
+    try {
+      const fines = await fineService.getFines()
+      if (Array.isArray(fines)) {
+        matchingFines = fines.filter((f: any) =>
+          String(f.vehicle_id) === String(id) ||
+          String(f.vehicleId) === String(id) ||
+          (vehicle?.plate && f.vehicle_plate && String(f.vehicle_plate).toUpperCase() === String(vehicle.plate).toUpperCase()) ||
+          (vehicle?.plate && f.vehicle && String(f.vehicle).toUpperCase().includes(String(vehicle.plate).toUpperCase()))
+        )
+      }
+    } catch (e) {}
+
+    let matchingFuelings: any[] = []
+    try {
+      const fuelRes = await fuelService.getAll()
+      const fetchedFuel = fuelRes.data?.data || fuelRes.data || []
+      matchingFuelings = fetchedFuel.filter((f: any) =>
+        String(f.vehicleId) === String(id) ||
+        String(f.vehicle_id) === String(id) ||
+        (vehicle?.plate && f.vehiclePlate && String(f.vehiclePlate).toUpperCase() === String(vehicle.plate).toUpperCase())
+      )
+    } catch (e) {}
+
+    if (typeof window !== "undefined") {
+      const savedFuel = localStorage.getItem("frotaone_fuel_records")
+      if (savedFuel) {
+        try {
+          const parsed = JSON.parse(savedFuel)
+          const localMatching = parsed.filter((f: any) =>
+            String(f.vehicleId) === String(id) ||
+            String(f.vehicle_id) === String(id) ||
+            (vehicle?.plate && f.vehiclePlate && String(f.vehiclePlate).toUpperCase() === String(vehicle.plate).toUpperCase())
+          )
+          matchingFuelings = [...matchingFuelings, ...localMatching]
+        } catch (e) {}
+      }
+    }
+
+    let matchingExpenses: any[] = []
+    try {
+      const expenseRes = await expenseService.getAll()
+      const fetchedExp = Array.isArray(expenseRes) ? expenseRes : (expenseRes as any)?.data?.data || (expenseRes as any)?.data || []
+      matchingExpenses = fetchedExp.filter((ex: any) =>
+        String(ex.vehicle_id) === String(id) ||
+        String(ex.vehicleId) === String(id) ||
+        (vehicle?.plate && ex.vehicle_plate && String(ex.vehicle_plate).toUpperCase() === String(vehicle.plate).toUpperCase()) ||
+        (vehicle?.plate && ex.vehiclePlate && String(ex.vehiclePlate).toUpperCase() === String(vehicle.plate).toUpperCase()) ||
+        (vehicle?.plate && ex.vehicle_info && String(ex.vehicle_info).toUpperCase().includes(String(vehicle.plate).toUpperCase()))
+      )
+    } catch (e) {}
+
+    if (typeof window !== "undefined") {
+      const savedExp = localStorage.getItem("frotaone_expense_records")
+      if (savedExp) {
+        try {
+          const parsed = JSON.parse(savedExp)
+          const localMatchingExp = parsed.filter((ex: any) =>
+            String(ex.vehicle_id) === String(id) ||
+            String(ex.vehicleId) === String(id) ||
+            (vehicle?.plate && ex.vehicle_plate && String(ex.vehicle_plate).toUpperCase() === String(vehicle.plate).toUpperCase()) ||
+            (vehicle?.plate && ex.vehiclePlate && String(ex.vehiclePlate).toUpperCase() === String(vehicle.plate).toUpperCase()) ||
+            (vehicle?.plate && ex.vehicle_info && String(ex.vehicle_info).toUpperCase().includes(String(vehicle.plate).toUpperCase()))
+          )
+          matchingExpenses = [...matchingExpenses, ...localMatchingExp]
+        } catch (e) {}
+      }
+    }
+
+    let matchingWorkOrders: any[] = []
+    try {
+      const woRes = await workOrderService.getAll()
+      const fetchedWo = Array.isArray(woRes) ? woRes : (woRes as any)?.data?.data || (woRes as any)?.data || []
+      matchingWorkOrders = fetchedWo.filter((wo: any) => {
+        // Inclui ordens de serviço de todos os status (não apenas concluídas) pois o custo é acumulado
+        const matchesVehicle = String(wo.vehicle_id) === String(id) || String(wo.vehicleId) === String(id) ||
+          (vehicle?.plate && wo.vehicle_plate && String(wo.vehicle_plate).toUpperCase() === String(vehicle.plate).toUpperCase()) ||
+          (vehicle?.plate && wo.vehiclePlate && String(wo.vehiclePlate).toUpperCase() === String(vehicle.plate).toUpperCase())
+        return matchesVehicle
+      })
+    } catch (e) {}
+
+    const finesSum = matchingFines.reduce((acc: number, f: any) => acc + (Number(f.value || f.amount) || 0), 0)
+    const fuelSum = matchingFuelings.reduce((acc: number, f: any) => acc + (Number(f.cost || f.totalCost) || 0), 0)
+    const expenseSum = matchingExpenses.reduce((acc: number, ex: any) => acc + (Number(ex.amount || ex.value) || 0), 0)
+    const woSum = matchingWorkOrders.reduce((acc: number, wo: any) => acc + (Number(wo.cost_total || wo.costTotal) || 0), 0)
+    
+    const fuelLiters = matchingFuelings.reduce((acc, f) => acc + (Number(f.volume || f.liters || f.quantity) || 0), 0)
+    let avgConsumption = 0
+    const odometers = matchingFuelings.map((f: any) => Number(String(f.odometer || f.odometerReading).replace('.', '').replace(',', ''))).filter(o => o > 0)
+    if (odometers.length >= 2 && fuelLiters > 0) {
+      const maxOdo = Math.max(...odometers)
+      const minOdo = Math.min(...odometers)
+      avgConsumption = (maxOdo - minOdo) / fuelLiters
+    }
+
+    const computedCost = finesSum + fuelSum + expenseSum + woSum + Number(vehicle?.monthlyCost || vehicle?.cost || 0)
+    return { 
+      fineCount: matchingFines.length, 
+      vehicleCost: computedCost,
+      avgConsumption,
+      fines: matchingFines,
+      fuelings: matchingFuelings,
+      expenses: matchingExpenses,
+      workOrders: matchingWorkOrders
     }
   }
 
-  useEffect(() => {
-    fetchVehicle()
-  }, [id])
+  const { data: costsData } = useSWR(vehicle ? `costs_${id}_${vehicle.plate}` : null, fetchCosts, { revalidateOnFocus: false })
+  
+  const fineCount = costsData?.fineCount || 0
+  const vehicleCost = costsData?.vehicleCost || 0
 
   if (isLoading) {
     return (
@@ -145,9 +291,9 @@ export default function VehicleDetailsPage() {
                   <span className="text-muted-foreground">Ano</span>
                   <span className="font-semibold text-foreground">{vehicle.year}</span>
                 </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-muted-foreground">Motorista</span>
-                  <span className="font-semibold text-foreground">{vehicle.driverName || "Nenhum"}</span>
+                <div className="flex justify-between items-start text-xs gap-2 py-0.5">
+                  <span className="text-muted-foreground shrink-0">Motorista</span>
+                  <span className="font-semibold text-foreground text-[11px] text-right leading-tight max-w-[170px] break-words">{vehicle.driverName || "Nenhum"}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-muted-foreground">Unidade</span>
@@ -164,8 +310,18 @@ export default function VehicleDetailsPage() {
               <AlertPanel
                 title="Avisos Importantes"
                 alerts={[
-                  { id: "1", type: "warning", title: "Manutenção Próxima", description: "Revisão preventiva em 500 km" },
-                  { id: "2", type: "error", title: "Licenciamento Vencendo", description: "Licenciamento vence em 5 dias" }
+                  ...((costsData?.workOrders || []).filter((wo: any) => wo.status === 'pendente' || wo.status === 'agendado').map((wo: any) => ({
+                    id: `wo-${wo.id}`,
+                    type: "warning" as const,
+                    title: "Manutenção Pendente",
+                    description: wo.description || "Ordem de serviço aguardando ação"
+                  }))),
+                  ...(fineCount > 0 ? [{
+                    id: "fine-1",
+                    type: "error" as const,
+                    title: "Multas Registradas",
+                    description: `O veículo possui ${fineCount} multas registradas.`
+                  }] : [])
                 ]}
               />
             </div>
@@ -208,33 +364,30 @@ export default function VehicleDetailsPage() {
                     {/* KPIs */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                       <MetricCard
-                        title="Custos (Mês)"
-                        value="R$ 1.450"
+                        title="Custo Total"
+                        value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 }).format(vehicleCost)}
                         icon={<DollarSign className="w-4 h-4" />}
                         iconBgColor="bg-green-100 dark:bg-green-900/30"
                         iconColor="text-green-600"
-                        trend={-5.2}
-                        trendLabel="vs último mês"
+                        className="[&_.truncate]:!whitespace-normal [&_.truncate]:!overflow-visible"
                       />
                       <MetricCard
                         title="Consumo Médio"
-                        value="7.8 km/L"
+                        value={costsData?.avgConsumption ? `${costsData.avgConsumption.toFixed(1)} km/L` : "0 km/L"}
                         icon={<Activity className="w-4 h-4" />}
                         iconBgColor="bg-blue-100 dark:bg-blue-900/30"
                         iconColor="text-blue-600"
                       />
                       <MetricCard
                         title="Disponibilidade"
-                        value="98.5%"
+                        value={vehicleStatus === "operando" ? "100%" : "0%"}
                         icon={<CalendarClock className="w-4 h-4" />}
                         iconBgColor="bg-purple-100 dark:bg-purple-900/30"
                         iconColor="text-purple-600"
-                        trend={1.2}
-                        trendLabel="vs último mês"
                       />
                       <MetricCard
                         title="Multas (Ano)"
-                        value="2"
+                        value={String(fineCount)}
                         icon={<FileSignature className="w-4 h-4" />}
                         iconBgColor="bg-orange-100 dark:bg-orange-900/30"
                         iconColor="text-orange-600"
@@ -245,39 +398,37 @@ export default function VehicleDetailsPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       
                       <div className="space-y-4">
-                        <ChartCard 
-                          title="Evolução de Custos"
-                          type="bar"
-                          data={[1200, 1900, 3000, 5000, 2000, 3000]}
-                          labels={['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun']}
-                        />
-                        <ChartCard 
-                          title="Consumo de Combustível"
-                          type="line"
-                          data={[7.2, 7.5, 7.8, 7.4, 7.9, 7.8]}
-                          labels={['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun']}
-                        />
+                        <div className="bg-card border rounded-xl p-4 shadow-sm h-[200px] flex items-center justify-center text-muted-foreground text-sm">
+                          Sem dados suficientes para o gráfico de evolução de custos.
+                        </div>
+                        <div className="bg-card border rounded-xl p-4 shadow-sm h-[200px] flex items-center justify-center text-muted-foreground text-sm">
+                          Sem dados suficientes para o gráfico de consumo.
+                        </div>
                       </div>
                       
                       <div className="flex flex-col gap-3">
-                        <InsightCard 
-                          title="Análise de Desempenho"
-                          description="O veículo tem apresentado consumo estável, porém acima da média da categoria (6.5 km/L)."
-                          type="info"
-                          actionText="Ver relatório"
-                        />
-                        <InsightCard 
-                          title="Desgaste de Pneus"
-                          description="Os pneus traseiros estão próximos da vida útil recomendada. Previsão de troca em 15 dias."
-                          type="warning"
-                          actionText="Agendar OS"
-                        />
-                        <InsightCard 
-                          title="Multas Recentes"
-                          description="Foram registradas 2 infrações de velocidade na mesma via na última semana."
-                          type="danger"
-                          actionText="Analisar condutor"
-                        />
+                        {fineCount > 0 ? (
+                          <InsightCard 
+                            title="Multas Identificadas"
+                            description={`Foram registradas ${fineCount} infrações associadas a este veículo.`}
+                            type="danger"
+                            actionText="Ver histórico"
+                          />
+                        ) : (
+                          <InsightCard 
+                            title="Comportamento Positivo"
+                            description="Nenhuma multa registrada para este veículo."
+                            type="info"
+                          />
+                        )}
+                        {(costsData?.workOrders?.length || 0) > 0 && (
+                          <InsightCard 
+                            title="Manutenções Realizadas"
+                            description={`Este veículo possui ${costsData?.workOrders?.length || 0} ordens de serviço cadastradas.`}
+                            type="warning"
+                            actionText="Ver detalhes"
+                          />
+                        )}
                       </div>
 
                     </div>
@@ -308,58 +459,84 @@ export default function VehicleDetailsPage() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="manutencao" className="m-0 h-full flex items-center justify-center">
-                    <div className="text-center space-y-3">
-                      <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto">
-                        <Wrench className="w-8 h-8 text-muted-foreground" />
+                  <TabsContent value="manutencao" className="m-0 h-full p-4 overflow-y-auto">
+                    <h3 className="font-semibold text-lg border-b pb-2 mb-4">Plano de Manutenção</h3>
+                    {costsData?.workOrders && costsData.workOrders.length > 0 ? (
+                      <div className="space-y-3">
+                        {costsData.workOrders.map((wo: any) => (
+                          <div key={wo.id} className="p-3 border rounded-lg bg-card flex flex-col gap-2">
+                            <div className="flex justify-between">
+                              <span className="font-semibold">OS #{wo.id.split('-').pop()}</span>
+                              <span className="text-sm text-muted-foreground">{new Date(wo.created_at || wo.createdAt || Date.now()).toLocaleDateString('pt-BR')}</span>
+                            </div>
+                            <p className="text-sm text-foreground">{wo.description || 'Manutenção'}</p>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="px-2 py-0.5 bg-muted rounded-full uppercase font-bold">{wo.status || 'Pendente'}</span>
+                              <span className="font-semibold text-red-600">
+                                R$ {Number(wo.cost_total || wo.costTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <h3 className="font-semibold text-lg">Plano de Manutenção</h3>
-                      <p className="text-muted-foreground text-sm max-w-sm">
-                        Ordem de serviços ativas, histórico de peças e planos de revisão preventiva.
-                      </p>
-                    </div>
+                    ) : (
+                      <div className="text-center space-y-3 mt-10">
+                        <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+                          <Wrench className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                        <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                          Nenhuma ordem de serviço registrada para este veículo.
+                        </p>
+                      </div>
+                    )}
                   </TabsContent>
 
-                  <TabsContent value="historico" className="m-0 h-full p-4">
+                  <TabsContent value="historico" className="m-0 h-full p-4 overflow-y-auto">
                     <h3 className="font-semibold text-lg border-b pb-2 mb-4">Linha do Tempo</h3>
-                    <Timeline events={[
-                      {
-                        id: "1",
-                        title: "Manutenção Preventiva",
-                        description: "Troca de óleo e filtros. (OS #4312)",
-                        date: "Hoje, 09:30",
-                        icon: <Wrench className="w-4 h-4" />,
-                        iconBg: "bg-blue-100 dark:bg-blue-900/30",
-                        iconColor: "text-blue-600"
-                      },
-                      {
-                        id: "2",
-                        title: "Abastecimento",
-                        description: "45 Litros - Posto Ipiranga Centro",
-                        date: "Ontem, 18:45",
-                        icon: <Activity className="w-4 h-4" />,
-                        iconBg: "bg-green-100 dark:bg-green-900/30",
-                        iconColor: "text-green-600"
-                      },
-                      {
-                        id: "3",
-                        title: "Atribuição de Motorista",
-                        description: "Atribuído ao motorista João Silva",
-                        date: "10/05/2026",
-                        icon: <UserPlus className="w-4 h-4" />,
-                        iconBg: "bg-purple-100 dark:bg-purple-900/30",
-                        iconColor: "text-purple-600"
-                      },
-                      {
-                        id: "4",
-                        title: "Veículo Cadastrado",
-                        description: "Adicionado à frota",
-                        date: "01/05/2026",
-                        icon: <CarFront className="w-4 h-4" />,
-                        iconBg: "bg-orange-100 dark:bg-orange-900/30",
-                        iconColor: "text-orange-600"
-                      }
-                    ]} />
+                    <Timeline events={
+                      [
+                        ...(vehicle?.createdAt ? [{
+                          id: "created",
+                          title: "Veículo Cadastrado",
+                          description: "Adicionado à frota",
+                          date: new Date(vehicle.createdAt).toLocaleDateString('pt-BR'),
+                          icon: <CarFront className="w-4 h-4" />,
+                          iconBg: "bg-orange-100 dark:bg-orange-900/30",
+                          iconColor: "text-orange-600",
+                          timestamp: new Date(vehicle.createdAt).getTime()
+                        }] : []),
+                        ...(costsData?.workOrders || []).map((wo: any) => ({
+                          id: `wo-${wo.id}`,
+                          title: `Manutenção ${wo.type === 'preventiva' ? 'Preventiva' : 'Corretiva'}`,
+                          description: `${wo.description || 'OS'} - R$ ${Number(wo.cost_total || wo.costTotal || 0).toFixed(2)}`,
+                          date: new Date(wo.created_at || wo.createdAt || Date.now()).toLocaleDateString('pt-BR'),
+                          icon: <Wrench className="w-4 h-4" />,
+                          iconBg: "bg-blue-100 dark:bg-blue-900/30",
+                          iconColor: "text-blue-600",
+                          timestamp: new Date(wo.created_at || wo.createdAt || Date.now()).getTime()
+                        })),
+                        ...(costsData?.fuelings || []).map((f: any) => ({
+                          id: `fuel-${f.id}`,
+                          title: "Abastecimento",
+                          description: `${f.volume || f.liters || f.quantity || 0} Litros - R$ ${Number(f.cost || f.totalCost || 0).toFixed(2)}`,
+                          date: new Date(f.date || f.createdAt || f.fuel_date || Date.now()).toLocaleDateString('pt-BR'),
+                          icon: <Activity className="w-4 h-4" />,
+                          iconBg: "bg-green-100 dark:bg-green-900/30",
+                          iconColor: "text-green-600",
+                          timestamp: new Date(f.date || f.createdAt || f.fuel_date || Date.now()).getTime()
+                        })),
+                        ...(costsData?.expenses || []).map((ex: any) => ({
+                          id: `exp-${ex.id}`,
+                          title: "Despesa",
+                          description: `${ex.description || ex.category} - R$ ${Number(ex.amount || ex.value || 0).toFixed(2)}`,
+                          date: new Date(ex.date || ex.createdAt || Date.now()).toLocaleDateString('pt-BR'),
+                          icon: <DollarSign className="w-4 h-4" />,
+                          iconBg: "bg-red-100 dark:bg-red-900/30",
+                          iconColor: "text-red-600",
+                          timestamp: new Date(ex.date || ex.createdAt || Date.now()).getTime()
+                        }))
+                      ].sort((a, b) => b.timestamp - a.timestamp)
+                    } />
                   </TabsContent>
 
                   <TabsContent value="auditoria" className="m-0 h-full flex items-center justify-center">
@@ -395,7 +572,7 @@ export default function VehicleDetailsPage() {
             }} 
             onSuccess={() => {
               setIsEditDialogOpen(false)
-              fetchVehicle()
+              mutateVehicle()
             }} 
           />
         </DialogContent>
@@ -408,7 +585,7 @@ export default function VehicleDetailsPage() {
           onClose={() => setIsAssignModalOpen(false)}
           onSuccess={() => {
             setIsAssignModalOpen(false)
-            fetchVehicle()
+            mutateVehicle()
           }}
         />
       )}

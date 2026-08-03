@@ -28,6 +28,7 @@ export function WorkOrderFormSheet({ open, onOpenChange, onSuccess, editData }: 
 
   const { register, handleSubmit, watch, setValue, reset } = useForm({
     defaultValues: {
+      number: "",
       type: "Corretiva",
       priority: "Média",
       vehicle_id: "",
@@ -74,6 +75,7 @@ export function WorkOrderFormSheet({ open, onOpenChange, onSuccess, editData }: 
   // Fill form for edit mode
   useEffect(() => {
     if (editData && open) {
+      setValue("number", editData.number?.toString() || "")
       setValue("type", editData.type)
       setValue("priority", editData.priority)
       setValue("vehicle_id", editData.vehicle_id || "")
@@ -103,6 +105,7 @@ export function WorkOrderFormSheet({ open, onOpenChange, onSuccess, editData }: 
     try {
       const payload = {
         ...data,
+        number: data.number ? parseInt(data.number.toString(), 10) : undefined,
         vehicle_id: data.vehicle_id || null,
         driver_id: data.driver_id || null,
         km_opening: data.km_opening ? parseFloat(data.km_opening.toString().replace(',', '.')) : null,
@@ -157,7 +160,16 @@ export function WorkOrderFormSheet({ open, onOpenChange, onSuccess, editData }: 
             {/* ── Seção 1: Informações Gerais ── */}
             <div>
               <h3 className={SECTION_CLASS}>1. Informações Gerais</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className={LABEL_CLASS}>Número da OS</label>
+                  <input
+                    type="number"
+                    {...register("number")}
+                    className={FIELD_CLASS}
+                    placeholder="Automático se em branco"
+                  />
+                </div>
                 <div>
                   <label className={LABEL_CLASS}>Tipo de Manutenção *</label>
                   <select {...register("type", { required: true })} className={FIELD_CLASS}>

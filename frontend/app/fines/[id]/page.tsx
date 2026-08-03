@@ -15,33 +15,26 @@ import {
   MapPin, ShieldAlert, AlertTriangle, Scale, User, Car, 
   CreditCard, Paperclip, MessageSquare, History 
 } from "lucide-react"
+import useSWR from "swr"
 
 export default function FineDetailsPage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
 
-  const [fine, setFine] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchFine = async () => {
-      try {
-        setIsLoading(true)
-        import("@/services/fine.service").then(({ fineService }) => {
-          fineService.getFineById(id).then(res => {
-            setFine(res)
-            setIsLoading(false)
-          })
-        })
-      } catch (error) {
-        console.error(error)
-        setIsLoading(false)
-      }
+  const fetchFine = async () => {
+    if (!id) return null
+    try {
+      const { fineService } = await import("@/services/fine.service")
+      const res = await fineService.getFineById(id)
+      return res
+    } catch (error) {
+      console.error(error)
+      return null
     }
-    
-    if (id) fetchFine()
-  }, [id])
+  }
+
+  const { data: fine, isLoading, mutate } = useSWR(id ? `fine_detail_${id}` : null, fetchFine, { revalidateOnFocus: false })
 
   if (isLoading) {
     return (

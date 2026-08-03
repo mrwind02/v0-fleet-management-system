@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useForm, Controller } from "react-hook-form"
-import { vehicleService, unitService } from "../../services/api"
+import { vehicleService, unitService, settingsService } from "../../services/api"
 
 interface VehicleFormProps {
   onSuccess?: () => void
@@ -24,20 +24,72 @@ export function VehicleForm({ onSuccess, initialData }: VehicleFormProps) {
   })
 
   useEffect(() => {
-    unitService.getAll().then((res) => {
-      setUnits(res.data.data || [])
-    }).catch(console.error)
+    const loadUnits = async () => {
+      const list: { id: string; name: string; code?: string }[] = []
+
+      // Buscar Unidades reais da API
+      try {
+        const res = await unitService.getAll()
+        const fetched = res.data?.data || res.data || []
+        if (Array.isArray(fetched) && fetched.length > 0) {
+          fetched.forEach((u: any) => {
+            if (u.name) {
+              let displayName = u.name
+              if (u.name.toLowerCase() === "matriz" || u.name.toLowerCase().includes("matriz")) {
+                displayName = "Matriz"
+              } else if (u.code && u.code !== u.name) {
+                displayName = u.code.toLowerCase().startsWith("filial") ? u.code : `Filial ${u.code}`
+              } else if (!u.name.toLowerCase().startsWith("filial")) {
+                displayName = `Filial ${u.name}`
+              }
+
+              if (!list.some((item) => item.name.toLowerCase() === displayName.toLowerCase())) {
+                list.push({ id: u.id || u.name, name: displayName, code: u.code })
+              }
+            }
+          })
+        }
+      } catch (err) {
+        console.error("Erro ao buscar unidades da API:", err)
+      }
+
+      setUnits(list)
+    }
+
+    loadUnits()
   }, [])
+
+  // Pré-selecionar a unidade ao abrir para edição
+  useEffect(() => {
+    if (units.length > 0 && initialData) {
+      let matched = units.find((u) => u && String(u.id) === String(initialData.unitId))
+      if (!matched && initialData.unitName) {
+        const nameLower = initialData.unitName.toLowerCase()
+        matched = units.find((u) => u.name.toLowerCase() === nameLower || nameLower.includes(u.name.toLowerCase()))
+      }
+      if (matched) {
+        setValue("unitId", matched.id)
+        setValue("unitName", matched.name)
+      } else if (initialData.unitId) {
+        setValue("unitId", initialData.unitId)
+      }
+    }
+  }, [units, initialData, setValue])
 
   const onSubmit = async (data: any) => {
     setError("")
     setIsLoading(true)
 
+    // Resolver o nome real da unidade selecionada
+    const selectedUnit = units.find((u) => u && String(u.id) === String(data.unitId))
+    const unitName = selectedUnit?.name || data.unitName || ""
+    const payload = { ...data, unitName }
+
     try {
       if (initialData?.id) {
-        await vehicleService.update(initialData.id, data)
+        await vehicleService.update(initialData.id, payload)
       } else {
-        await vehicleService.create(data)
+        await vehicleService.create(payload)
       }
       onSuccess?.()
     } catch (err: any) {
@@ -57,14 +109,14 @@ export function VehicleForm({ onSuccess, initialData }: VehicleFormProps) {
             {...register("unitId", { 
               required: "Obrigatório",
               onChange: (e) => {
-                const selectedUnit = units.find(u => u.id === e.target.value)
+                const selectedUnit = units.find((u) => u && u.id && String(u.id) === String(e.target.value))
                 setValue("unitName", selectedUnit?.name || "")
               }
             })}
             className="w-full px-3 py-1.5 text-xs bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-blue-500 outline-none"
           >
             <option value="">Selecione...</option>
-            {units.map(u => (
+            {units.filter((u) => u && u.id).map((u) => (
               <option key={u.id} value={u.id}>{u.name}</option>
             ))}
           </select>

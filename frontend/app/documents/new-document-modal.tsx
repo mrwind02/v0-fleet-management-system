@@ -27,14 +27,14 @@ const formSchema = z.object({
   number: z.string().optional(),
   responsible: z.string().min(1, "Selecione um responsável"),
   status: z.string().min(1, "Selecione o status"),
-  relationType: z.enum(["veiculo", "motorista", "empresa", "fornecedor"], {
-    required_error: "Selecione o tipo de vínculo",
+  relationType: z.enum(["veiculo", "motorista", "empresa", "fornecedor"] as const, {
+    message: "Selecione o tipo de vínculo",
   }),
   relationId: z.string().min(1, "Selecione o registro correspondente"),
   issueDate: z.string().optional(),
   expirationDate: z.string().min(1, "Data de validade é obrigatória"),
   alertDays: z.string().optional(),
-  file: z.any().refine((val) => val !== null && val !== undefined, "Arquivo é obrigatório"),
+  file: z.any().optional(),
   notes: z.string().optional(),
 })
 
@@ -44,49 +44,134 @@ interface NewDocumentModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
+  document?: any
 }
 
-export function NewDocumentModal({ open, onOpenChange, onSuccess }: NewDocumentModalProps) {
+export function NewDocumentModal({ open, onOpenChange, onSuccess, document }: NewDocumentModalProps) {
+  const [users, setUsers] = React.useState<any[]>([])
+  const [vehicles, setVehicles] = React.useState<any[]>([])
+  const [drivers, setDrivers] = React.useState<any[]>([])
+  const [units, setUnits] = React.useState<any[]>([])
+  const [suppliers, setSuppliers] = React.useState<any[]>([])
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      type: "",
-      name: "",
-      number: "",
-      responsible: "",
-      status: "valido",
-      relationType: "veiculo",
-      relationId: "",
-      issueDate: "",
-      expirationDate: "",
+      type: document?.category || "",
+      name: document?.name || "",
+      number: document?.number || "",
+      responsible: document?.responsible || "",
+      status: document?.status || "valido",
+      relationType: document?.vehicle_id ? "veiculo" : document?.driver_id ? "motorista" : "veiculo",
+      relationId: document?.vehicle_id || document?.driver_id || "",
+      issueDate: document?.issue_date ? new Date(document.issue_date).toISOString().split('T')[0] : "",
+      expirationDate: document?.expiry_date ? new Date(document.expiry_date).toISOString().split('T')[0] : "",
       alertDays: "30",
       file: null,
-      notes: "",
+      notes: document?.notes || "",
     },
   })
 
+  React.useEffect(() => {
+    if (document) {
+      form.reset({
+        type: document.category || "",
+        name: document.name || "",
+        number: document.number || "",
+        responsible: document.responsible || "",
+        status: document.status || "valido",
+        relationType: document.vehicle_id ? "veiculo" : document.driver_id ? "motorista" : "veiculo",
+        relationId: document.vehicle_id || document.driver_id || "",
+        issueDate: document.issue_date ? new Date(document.issue_date).toISOString().split('T')[0] : "",
+        expirationDate: document.expiry_date ? new Date(document.expiry_date).toISOString().split('T')[0] : "",
+        alertDays: "30",
+        file: null,
+        notes: document.notes || "",
+      });
+    } else {
+      form.reset({
+        type: "",
+        name: "",
+        number: "",
+        responsible: "",
+        status: "valido",
+        relationType: "veiculo",
+        relationId: "",
+        issueDate: "",
+        expirationDate: "",
+        alertDays: "30",
+        file: null,
+        notes: "",
+      });
+    }
+  }, [document, form]);
+
   const relationType = form.watch("relationType")
 
+  React.useEffect(() => {
+    import("@/services/api").then(({ api, userService, vehicleService, driverService, unitService }) => {
+      if (userService) userService.getAll().then((r: any) => setUsers(r.data?.data || r.data || [])).catch(() => {})
+      else api.get('/users').then((r: any) => setUsers(r.data?.data || r.data || [])).catch(() => {})
+      
+      if (vehicleService) vehicleService.getAll().then((r: any) => setVehicles(r.data?.data || r.data || [])).catch(() => {})
+      else api.get('/vehicles').then((r: any) => setVehicles(r.data?.data || r.data || [])).catch(() => {})
+      
+      if (driverService) driverService.getAll().then((r: any) => setDrivers(r.data?.data || r.data || [])).catch(() => {})
+      else api.get('/drivers').then((r: any) => setDrivers(r.data?.data || r.data || [])).catch(() => {})
+      
+      if (unitService) unitService.getAll().then((r: any) => setUnits(r.data?.data || r.data || [])).catch(() => {})
+      else api.get('/units').then((r: any) => setUnits(r.data?.data || r.data || [])).catch(() => {})
+      
+      api.get('/suppliers').then((r: any) => setSuppliers(r.data?.data || r.data || [])).catch(() => {})
+    })
+  }, [])
+
+  const getRelationOptions = () => {
+    if (relationType === "veiculo") return vehicles.map(v => ({ label: `${v.brand || ''} ${v.model || ''} (${v.plate || ''})`, value: String(v.id), description: "Veículo" }))
+    if (relationType === "motorista") return drivers.map(d => ({ label: d.name, value: String(d.id), description: "Motorista" }))
+    if (relationType === "empresa") return units.map(u => ({ label: u.name || u.unitName, value: String(u.id), description: "Unidade/Filial" }))
+    if (relationType === "fornecedor") return suppliers
+      .filter(s => s.name || s.fantasyName || s.razao_social)
+      .map(s => ({ label: s.name || s.fantasyName || s.razao_social, value: String(s.id), description: "Fornecedor" }))
+    return []
+  }
+
   const onSubmit = async (data: FormValues) => {
+    if (!document?.id && !data.file) {
+      form.setError("file", { message: "Arquivo é obrigatório" });
+      return;
+    }
+
     try {
-      let vId, dId;
+      let vId = "", dId = "";
       if (data.relationType === "veiculo") vId = data.relationId;
       else if (data.relationType === "motorista") dId = data.relationId;
 
-      await documentService.createDocument({
-        name: data.name,
-        category: data.type,
-        related_to: data.relationId, // Mapeado no backend pra ficar mockado ou pegar nome real
-        number: data.number,
-        issue_date: data.issueDate,
-        expiry_date: data.expirationDate,
-        status: data.status,
-        responsible: data.responsible,
-        notes: data.notes,
-        vehicle_id: vId,
-        driver_id: dId
-      })
-      toast.success("Documento cadastrado com sucesso!")
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("category", data.type);
+      if (data.relationId) formData.append("related_to", data.relationId);
+      if (data.number) formData.append("number", data.number);
+      if (data.issueDate) formData.append("issue_date", data.issueDate);
+      if (data.expirationDate) formData.append("expiry_date", data.expirationDate);
+      formData.append("status", data.status);
+      formData.append("responsible", data.responsible);
+      if (data.notes) formData.append("notes", data.notes);
+      if (vId) formData.append("vehicle_id", vId);
+      if (dId) formData.append("driver_id", dId);
+      
+      if (data.file) {
+        formData.append("file", data.file);
+      }
+
+      if (document?.id) {
+        await documentService.updateDocument(document.id, formData as any);
+        toast.success("Documento atualizado com sucesso!");
+      } else {
+        await documentService.createDocument(formData as any);
+        toast.success("Documento cadastrado com sucesso!");
+      }
+
       onOpenChange(false)
       form.reset()
       onSuccess?.()
@@ -106,9 +191,9 @@ export function NewDocumentModal({ open, onOpenChange, onSuccess }: NewDocumentM
               <FileText className="h-6 w-6" />
             </div>
             <div>
-              <SheetTitle className="text-xl">Novo Documento</SheetTitle>
+              <SheetTitle className="text-xl">{document ? "Editar Documento" : "Novo Documento"}</SheetTitle>
               <SheetDescription className="mt-1">
-                Cadastre um documento e vincule-o a um veículo, motorista ou outro registro da empresa.
+                {document ? "Atualize os dados do documento abaixo." : "Cadastre um documento e vincule-o a um veículo, motorista ou outro registro da empresa."}
               </SheetDescription>
             </div>
           </div>
@@ -175,9 +260,9 @@ export function NewDocumentModal({ open, onOpenChange, onSuccess }: NewDocumentM
                       <FormControl>
                         <Select {...field} error={!!form.formState.errors.responsible}>
                           <option value="" disabled>Selecione um responsável...</option>
-                          <option value="admin">Administrador Geral</option>
-                          <option value="joao">João (Jurídico)</option>
-                          <option value="maria">Maria (Frota)</option>
+                          {users.map(u => (
+                            <option key={u.id} value={u.name || u.email}>{u.name || u.email}</option>
+                          ))}
                         </Select>
                       </FormControl>
                       <FormMessage />
@@ -235,11 +320,7 @@ export function NewDocumentModal({ open, onOpenChange, onSuccess }: NewDocumentM
                           <FormControl>
                             <Autocomplete
                               placeholder={`Buscar ${relationType}...`}
-                              options={[
-                                { label: "Scania R450 (XYZ-9876)", value: "1", description: "Frota Principal" },
-                                { label: "Volvo FH540 (ABC-1234)", value: "2", description: "Frota Secundária" },
-                                { label: "Carlos Oliveira", value: "3", description: "CNH: 123456" }
-                              ]}
+                              options={getRelationOptions()}
                               value={field.value}
                               onChange={field.onChange}
                               error={!!form.formState.errors.relationId}
@@ -336,7 +417,7 @@ export function NewDocumentModal({ open, onOpenChange, onSuccess }: NewDocumentM
             Cancelar
           </Button>
           <Button type="submit" form="new-document-form" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Salvando..." : "Salvar Documento"}
+            {form.formState.isSubmitting ? "Salvando..." : (document ? "Salvar Alterações" : "Salvar Documento")}
           </Button>
         </SheetFooter>
       </SheetContent>

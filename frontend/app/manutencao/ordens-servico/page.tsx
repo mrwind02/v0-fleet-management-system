@@ -26,6 +26,7 @@ import {
   ClipboardList, Wrench, Package, AlertTriangle, DollarSign, Truck,
   Plus, Download, Upload, MoreHorizontal, Clock, Building2, TrendingDown
 } from "lucide-react"
+import useSWR from "swr"
 
 
 const STATUS_COLORS: Record<string, string> = {
@@ -55,14 +56,7 @@ function getStatusVariant(status: string): any {
 
 export default function WorkOrdersPage() {
   const router = useRouter()
-  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([])
-  const [metrics, setMetrics] = useState<WorkOrderMetrics | null>(null)
-  const [costByMonth, setCostByMonth] = useState<any[]>([])
-  const [byType, setByType] = useState<any[]>([])
-  const [byStatus, setByStatus] = useState<any[]>([])
-  const [insights, setInsights] = useState<any>(null)
-  const [alerts, setAlerts] = useState<AlertItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [globalFilter, setGlobalFilter] = useState("")
   const [density, setDensity] = useState<TableDensity>("comfortable")
@@ -70,11 +64,9 @@ export default function WorkOrdersPage() {
   useEffect(() => {
     const saved = localStorage.getItem("fleet:table-density") as TableDensity
     if (saved) setDensity(saved)
-    fetchAll()
   }, [])
 
   const fetchAll = async () => {
-    setIsLoading(true)
     try {
       const [wos, met, cost, type, status, ins] = await Promise.all([
         workOrderService.getAll(),
@@ -84,12 +76,6 @@ export default function WorkOrdersPage() {
         workOrderService.getByStatus(),
         workOrderService.getInsights(),
       ])
-      setWorkOrders(wos)
-      setMetrics(met)
-      setCostByMonth(cost)
-      setByType(type)
-      setByStatus(status)
-      setInsights(ins)
 
       // Build dynamic alerts
       const dynamicAlerts: AlertItem[] = []
@@ -98,13 +84,31 @@ export default function WorkOrdersPage() {
       if (met.waitingApproval > 0) dynamicAlerts.push({ id: "approval", type: "warning", title: `${met.waitingApproval} OS aguardando aprovação`, description: "Pendentes de autorização do gestor." })
       if (met.waitingParts > 0) dynamicAlerts.push({ id: "parts", type: "warning", title: `${met.waitingParts} OS aguardando peças`, description: "Verificar pedidos com fornecedores." })
       if (dynamicAlerts.length === 0) dynamicAlerts.push({ id: "ok", type: "info" as any, title: "Tudo em ordem!", description: "Nenhum alerta crítico no momento." })
-      setAlerts(dynamicAlerts)
+
+      return {
+        workOrders: wos,
+        metrics: met,
+        costByMonth: cost,
+        byType: type,
+        byStatus: status,
+        insights: ins,
+        alerts: dynamicAlerts
+      }
     } catch (e) {
       console.error(e)
-    } finally {
-      setIsLoading(false)
+      return null
     }
   }
+
+  const { data, isLoading, mutate } = useSWR('work_orders_dashboard_data', fetchAll, { revalidateOnFocus: false })
+  
+  const workOrders = data?.workOrders || []
+  const metrics = data?.metrics || null
+  const costByMonth = data?.costByMonth || []
+  const byType = data?.byType || []
+  const byStatus = data?.byStatus || []
+  const insights = data?.insights || null
+  const alerts = data?.alerts || []
 
   const handleDensityChange = (d: TableDensity) => {
     setDensity(d)
@@ -213,20 +217,12 @@ export default function WorkOrdersPage() {
           title="Ordens de Serviço"
           description="Gerencie todas as intervenções realizadas na frota, acompanhando serviços, custos e andamento das manutenções."
           actions={
-            <>
-              <Button variant="outline" className="h-9 text-xs shadow-sm">
-                <Upload className="mr-2 h-4 w-4" /> Importar
-              </Button>
-              <Button variant="outline" className="h-9 text-xs shadow-sm">
-                <Download className="mr-2 h-4 w-4" /> Exportar
-              </Button>
-              <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white h-9 text-xs font-semibold shadow-sm"
-                onClick={() => setIsFormOpen(true)}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Nova Ordem de Serviço
-              </Button>
-            </>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white h-9 text-xs font-semibold shadow-sm"
+              onClick={() => setIsFormOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Nova Ordem de Serviço
+            </Button>
           }
         />
 
@@ -440,6 +436,7 @@ export default function WorkOrdersPage() {
             density={density}
             searchKey="responsible"
             searchValue={globalFilter}
+            isLoading={isLoading}
             onRowClick={(row) => router.push(`/manutencao/ordens-servico/${row.id}`)}
             emptyStateTitle="Nenhuma Ordem de Serviço encontrada"
             emptyStateDescription="Crie uma nova OS para começar a registrar manutenções da frota."
@@ -450,7 +447,7 @@ export default function WorkOrdersPage() {
       <WorkOrderFormSheet
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
-        onSuccess={fetchAll}
+        onSuccess={() => mutate()}
       />
     </AppLayout>
   )

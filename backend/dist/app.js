@@ -11,7 +11,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const routes_1 = require("./routes");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 // Middlewares
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
@@ -21,7 +21,7 @@ app.use((0, cors_1.default)({
         "https://frotaone.vercel.app",
         process.env.CORS_ORIGIN || "*"
     ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
 }));
@@ -128,7 +128,7 @@ app.get("/health", (req, res) => {
 app.use((req, res) => {
     res.status(404).json({ success: false, error: "Endpoint not found" });
 });
-app.listen(PORT, () => {
+app.listen(Number(PORT), "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}`);
 });
 exports.default = app;

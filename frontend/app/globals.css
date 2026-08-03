@@ -1,5 +1,21 @@
 @import "tailwindcss";
-/* @import "tw-animate-css"; */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom Brand Font & Scrollbar Hiding Utility */
+.font-brand {
+  font-family: var(--font-outfit), 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 @custom-variant dark (&:is(.dark *));
 
@@ -177,4 +193,16 @@
 *:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+@media print {
+  header, nav, sidebar, footer, button, input, select, .no-print, [data-slot="sheet-portal"] {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
 }

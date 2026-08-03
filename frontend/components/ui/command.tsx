@@ -49,10 +49,10 @@ function CommandDialog({
         <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
       <DialogContent
-        className={cn("overflow-hidden p-0", className)}
+        className={cn("overflow-hidden p-0 sm:max-w-2xl md:max-w-3xl border shadow-xl rounded-xl focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0", className)}
         showCloseButton={showCloseButton}
       >
-        <Command className="**:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
+        <Command className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:py-2.5 [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4">
           {children}
         </Command>
       </DialogContent>
@@ -65,19 +65,21 @@ function CommandInput({
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
-    <div
-      data-slot="command-input-wrapper"
-      className="flex h-9 items-center gap-2 border-b px-3"
-    >
-      <SearchIcon className="size-4 shrink-0 opacity-50" />
-      <CommandPrimitive.Input
-        data-slot="command-input"
-        className={cn(
-          "flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
-          className
-        )}
-        {...props}
-      />
+    <div className="p-3 pb-2.5 bg-muted/10 border-b">
+      <div
+        data-slot="command-input-wrapper"
+        className="flex h-11 items-center gap-2.5 rounded-xl border border-blue-500 bg-background px-3.5 shadow-xs focus-within:ring-2 focus-within:ring-blue-500/30 transition-all"
+      >
+        <SearchIcon className="size-4 shrink-0 text-blue-600 dark:text-blue-400" />
+        <CommandPrimitive.Input
+          data-slot="command-input"
+          className={cn(
+            "flex h-full w-full bg-transparent text-sm !border-0 !border-none !outline-none !ring-0 focus:!border-0 focus:!outline-none focus:!ring-0 focus-visible:!border-0 focus-visible:!outline-none focus-visible:!ring-0 placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 shadow-none",
+            className
+          )}
+          {...props}
+        />
+      </div>
     </div>
   )
 }

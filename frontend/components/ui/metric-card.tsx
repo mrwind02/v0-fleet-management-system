@@ -9,7 +9,7 @@ import { motion } from "framer-motion"
 
 interface MetricCardProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string
-  value: string | number
+  value: React.ReactNode
   trend?: number
   trendLabel?: string
   icon?: React.ReactNode

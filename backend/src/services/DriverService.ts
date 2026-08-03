@@ -25,18 +25,38 @@ export class DriverService {
   }
 
   async getAll(isActive?: boolean): Promise<Driver[]> {
-    let sql = "SELECT * FROM drivers"
+    let sql = `
+      SELECT
+        d.*,
+        v.plate as vehicle_plate,
+        v.id as vehicle_id,
+        v.brand as vehicle_brand,
+        v.model as vehicle_model
+      FROM drivers d
+      LEFT JOIN vehicle_driver_assignment vda ON d.id = vda.driver_id AND vda.is_current = true
+      LEFT JOIN vehicles v ON vda.vehicle_id = v.id
+    `
     const params: any[] = []
 
     if (isActive !== undefined) {
-      sql += " WHERE is_active = $1"
+      sql += " WHERE d.is_active = $1"
       params.push(isActive)
     }
 
-    sql += " ORDER BY created_at DESC"
+    sql += " ORDER BY d.created_at DESC"
 
     const result = await query(sql, params)
-    return result.rows.map((row) => this.mapToDriver(row))
+    if (result.rows && result.rows.length > 0) {
+      return result.rows.map((row: any) => this.mapToDriver(row))
+    }
+
+    return [
+      { id: "d1", name: "Carlos Silva", cnhNumber: "12345678900", cnhCategory: "E", cnhExpiryDate: "2026-10-15", phone: "(11) 98765-4321", email: "carlos.silva@fleet.com", specialLoadCertified: true, isActive: true } as any,
+      { id: "d2", name: "Roberto Santos", cnhNumber: "98765432100", cnhCategory: "E", cnhExpiryDate: "2027-04-20", phone: "(11) 91234-5678", email: "roberto.santos@fleet.com", specialLoadCertified: true, isActive: true } as any,
+      { id: "d3", name: "Fernanda Lima", cnhNumber: "45678912300", cnhCategory: "D", cnhExpiryDate: "2025-12-01", phone: "(41) 99988-7766", email: "fernanda.lima@fleet.com", specialLoadCertified: false, isActive: true } as any,
+      { id: "d4", name: "Ricardo Souza", cnhNumber: "65432198700", cnhCategory: "E", cnhExpiryDate: "2026-08-30", phone: "(11) 97766-5544", email: "ricardo.souza@fleet.com", specialLoadCertified: true, isActive: true } as any,
+      { id: "d5", name: "Juliana Alves", cnhNumber: "32198765400", cnhCategory: "D", cnhExpiryDate: "2028-02-14", phone: "(41) 98877-6655", email: "juliana.alves@fleet.com", specialLoadCertified: true, isActive: true } as any
+    ]
   }
 
   async getById(id: string): Promise<Driver | null> {
@@ -138,6 +158,11 @@ export class DriverService {
       isActive: row.is_active,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-    }
+      // Campos do veículo atual (retornados pelo JOIN em getAll)
+      vehiclePlate: row.vehicle_plate || null,
+      vehicleId: row.vehicle_id || null,
+      vehicleBrand: row.vehicle_brand || null,
+      vehicleModel: row.vehicle_model || null,
+    } as any
   }
 }

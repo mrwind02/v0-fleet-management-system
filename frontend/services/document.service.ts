@@ -29,15 +29,52 @@ export const documentService = {
     }
   },
 
-  createDocument: async (data: Partial<Document>): Promise<Document> => {
+  getDocumentById: async (id: string): Promise<Document> => {
     try {
+      const response = await fetch(`${API_BASE_URL}/documents/${id}`)
+      if (!response.ok) throw new Error("Falha ao buscar documento")
+      return await response.json()
+    } catch (error) {
+      throw handleApiError(error)
+    }
+  },
+
+  createDocument: async (data: FormData | Partial<Document>): Promise<Document> => {
+    try {
+      const isFormData = data instanceof FormData;
       const response = await fetch(`${API_BASE_URL}/documents`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+        body: isFormData ? data as FormData : JSON.stringify(data)
       })
       if (!response.ok) throw new Error("Falha ao criar documento")
       return await response.json()
+    } catch (error) {
+      throw handleApiError(error)
+    }
+  },
+
+  updateDocument: async (id: string, data: FormData | Partial<Document>): Promise<Document> => {
+    try {
+      const isFormData = data instanceof FormData;
+      const response = await fetch(`${API_BASE_URL}/documents/${id}`, {
+        method: 'PUT',
+        headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+        body: isFormData ? data as FormData : JSON.stringify(data)
+      })
+      if (!response.ok) throw new Error("Falha ao atualizar documento")
+      return await response.json()
+    } catch (error) {
+      throw handleApiError(error)
+    }
+  },
+
+  deleteDocument: async (id: string): Promise<void> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/documents/${id}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) throw new Error("Falha ao excluir documento")
     } catch (error) {
       throw handleApiError(error)
     }

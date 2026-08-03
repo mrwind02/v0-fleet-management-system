@@ -9,6 +9,9 @@ interface ChartCardProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string
   description?: string
   action?: React.ReactNode
+  type?: string
+  data?: any[]
+  labels?: string[]
 }
 
 export function ChartCard({
@@ -26,11 +29,13 @@ export function ChartCard({
       className="h-full flex flex-col"
     >
       <Card className={cn("p-0 gap-0 flex flex-col flex-1 overflow-hidden shadow-sm border-muted-foreground/10 hover:shadow-md transition-all", className)} {...props}>
-        <CardHeader className="flex flex-row items-start justify-between space-y-0 p-3 pb-0">
-          <div className="space-y-0.5">
-            <CardTitle className="text-sm font-bold text-foreground">{title}</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1 gap-2">
+          <div className="space-y-0.5 min-w-0 flex-1">
+            <CardTitle className="text-xs sm:text-sm font-bold text-foreground leading-tight truncate" title={title}>
+              {title}
+            </CardTitle>
             {description && (
-              <CardDescription className="text-[11px] text-muted-foreground">{description}</CardDescription>
+              <CardDescription className="text-[11px] text-muted-foreground truncate">{description}</CardDescription>
             )}
           </div>
           {action && <div className="shrink-0">{action}</div>}

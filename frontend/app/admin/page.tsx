@@ -2,50 +2,51 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { MainLayout } from "../../components/layout/MainLayout"
+import { AppLayout } from "@/components/layout/AppLayout"
 import { useAuthStore } from "../../store/authStore"
 import { userService, settingsService } from "../../services/api"
 import { Shield, Users, Trash2, Edit, Save, X, Ban, CheckCircle } from "lucide-react"
+import useSWR from "swr"
 
 export default function AdminPage() {
     const { user } = useAuthStore()
     const router = useRouter()
-    const [users, setUsers] = useState<any[]>([])
-    const [allowAdminRegister, setAllowAdminRegister] = useState(false)
-    const [isLoading, setIsLoading] = useState(true)
     const [isEditing, setIsEditing] = useState<string | null>(null)
     const [editForm, setEditForm] = useState<any>({})
+
+    const fetchAdminData = async () => {
+        try {
+            const [usersRes, settingsRes] = await Promise.all([
+                userService.getAll(),
+                settingsService.getPublic("allow_admin_register")
+            ])
+            return {
+                users: usersRes.data?.data || [],
+                allowAdminRegister: settingsRes.data?.allowed || false
+            }
+        } catch (error) {
+            console.error("Error loading admin data", error)
+            return null
+        }
+    }
+
+    const { data, isLoading, mutate } = useSWR(user?.role === "admin" ? 'admin_dashboard_data' : null, fetchAdminData, { revalidateOnFocus: false })
+
+    const users = data?.users || []
+    const allowAdminRegister = data?.allowAdminRegister || false
 
     useEffect(() => {
         if (!user) return
         if (user.role !== "admin") {
             router.push("/dashboard")
-            return
         }
-        loadData()
-    }, [user])
-
-    const loadData = async () => {
-        try {
-            setIsLoading(true)
-            const [usersRes, settingsRes] = await Promise.all([
-                userService.getAll(),
-                settingsService.getPublic("allow_admin_register")
-            ])
-            setUsers(usersRes.data.data)
-            setAllowAdminRegister(settingsRes.data.allowed)
-        } catch (error) {
-            console.error("Error loading admin data", error)
-        } finally {
-            setIsLoading(false)
-        }
-    }
+    }, [user, router])
 
     const toggleAdminRegister = async () => {
         try {
             const newValue = !allowAdminRegister
             await settingsService.update("allow_admin_register", String(newValue))
-            setAllowAdminRegister(newValue)
+            mutate()
         } catch (error) {
             console.error("Failed to update settings", error)
             alert("Erro ao atualizar configuração.")
@@ -56,7 +57,7 @@ export default function AdminPage() {
         if (!confirm("Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.")) return
         try {
             await userService.delete(id)
-            setUsers(users.filter(u => u.id !== id))
+            mutate()
         } catch (error) {
             console.error("Error deleting user", error)
             alert("Erro ao excluir usuário.")
@@ -71,8 +72,8 @@ export default function AdminPage() {
     const handleEditSave = async () => {
         try {
             await userService.update(editForm.id, editForm)
-            setUsers(users.map(u => u.id === editForm.id ? { ...u, ...editForm } : u))
             setIsEditing(null)
+            mutate()
         } catch (error) {
             console.error("Error updating user", error)
             alert("Erro ao atualizar usuário.")
@@ -83,7 +84,7 @@ export default function AdminPage() {
         try {
             const newValue = !user.is_active
             await userService.update(user.id, { is_active: newValue })
-            setUsers(users.map(u => u.id === user.id ? { ...u, is_active: newValue } : u))
+            mutate()
         } catch (error) {
             console.error("Error toggling user status", error)
         }
@@ -92,10 +93,11 @@ export default function AdminPage() {
     if (isLoading) return <div className="p-8 text-center">Carregando painel administrativo...</div>
 
     return (
-        <MainLayout>
+        <AppLayout>
             <div className="space-y-8">
                 <div className="flex items-center gap-3 mb-6">
                     <Shield className="h-8 w-8 text-blue-600" />
+                    <h1 className="text-2xl font-bold text-gray-900">Painel Administrativo</h1>
                 </div>
 
                 {/* Settings Section */}
@@ -200,6 +202,6 @@ export default function AdminPage() {
                     </div>
                 </div>
             </div>
-        </MainLayout>
+        </AppLayout>
     )
 }

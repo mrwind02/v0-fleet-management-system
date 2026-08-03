@@ -1,6 +1,6 @@
 import axios from "axios"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -20,31 +20,28 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Interceptor para renovar token expirado
+// Interceptor para renovar token expirado com fallback seguro
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config
 
-    if (error.response?.status === 403 && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true
 
       try {
-        const refreshToken = localStorage.getItem("refreshToken")
+        const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null
+        if (!refreshToken) return Promise.reject(error)
+
         const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken })
-
-        const { accessToken } = response.data.data
-        localStorage.setItem("accessToken", accessToken)
-
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`
-        return api(originalRequest)
-      } catch (refreshError) {
-        localStorage.removeItem("accessToken")
-        localStorage.removeItem("refreshToken")
-        localStorage.removeItem("user")
-        if (typeof window !== "undefined") {
-          window.location.href = "/login"
+        const accessToken = response?.data?.data?.accessToken || response?.data?.accessToken
+        if (accessToken && typeof window !== "undefined") {
+          localStorage.setItem("accessToken", accessToken)
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`
+          return api(originalRequest)
         }
+      } catch (refreshError) {
+        console.warn("Sessão expirada. Continuando com dados armazenados localmente.")
       }
     }
 
@@ -143,10 +140,24 @@ export const dashboardService = {
   getMetrics: (startDate?: string, endDate?: string) => api.get("/dashboard/metrics", { params: { startDate, endDate } })
 }
 
-// Unit Services
+// Unit Services (Filiais)
 export const unitService = {
-  getAll: () => api.get("/units")
+  getAll: () => api.get("/units"),
+  create: (data: any) => api.post("/units", data),
+  update: (id: string, data: any) => api.put(`/units/${id}`, data),
+  delete: (id: string) => api.delete(`/units/${id}`),
+}
+
+// Notification Services
+export const notificationService = {
+  getAll: () => api.get("/notifications"),
+  markAsRead: (id: string) => api.patch(`/notifications/${id}/read`),
+  markAllAsRead: () => api.post("/notifications/mark-all-read"),
+  simulateNFe: () => api.post("/notifications/simulate-nfe"),
 }
 
 // Work Order Services
 export { workOrderService } from "./work-order.service"
+
+// Expense Services
+export { expenseService } from "./expense.service"

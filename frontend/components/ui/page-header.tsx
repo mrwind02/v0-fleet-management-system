@@ -12,7 +12,7 @@ interface BreadcrumbItem {
 interface PageHeaderProps {
   breadcrumbs: BreadcrumbItem[]
   title: string
-  description?: string
+  description?: React.ReactNode
   actions?: React.ReactNode
 }
 
@@ -43,7 +43,7 @@ export function PageHeader({ breadcrumbs, title, description, actions }: PageHea
         )}
         <h1 className="text-2xl font-bold text-foreground">{title}</h1>
         {description && (
-          <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+          <div className="text-sm text-muted-foreground mt-0.5">{description}</div>
         )}
       </div>
       

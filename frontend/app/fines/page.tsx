@@ -18,6 +18,7 @@ import { fineService } from "@/services/fine.service"
 import { cn } from "@/utils/utils"
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, YAxis, CartesianGrid, LineChart, Line, Legend, LabelList, Label } from "recharts"
 import { Download, Plus, AlertOctagon, UserX, TrendingDown, Clock } from "lucide-react"
+import useSWR from "swr"
 
 type ExtendedFine = {
   id: string
@@ -88,99 +89,104 @@ const UNIT_COLORS = ["#F97316", "#06B6D4", "#10B981", "#6366F1"]
 
 export default function FinesPage() {
   const router = useRouter()
-  const [fines, setFines] = useState<ExtendedFine[]>([])
   const [globalFilter, setGlobalFilter] = useState("")
   const [density, setDensity] = useState<TableDensity>("comfortable")
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const [categoryData, setCategoryData] = useState<any[]>([])
-  const [monthData, setMonthData] = useState<any[]>([])
-  const [unitData, setUnitData] = useState<any[]>([])
-  const [insights, setInsights] = useState<any>({
-    criticalVehicle: { title: "N/A", value: "0 Multas", description: "Sem dados" },
-    criticalDriver: { title: "N/A", value: "0 Pontos", description: "Sem dados" },
-    trend: { value: "0%", description: "Sem dados", isPositive: true }
-  })
-
   useEffect(() => {
     const savedDensity = localStorage.getItem("fleet:table-density") as TableDensity
     if (savedDensity) setDensity(savedDensity)
-    
-    const fetchFines = async () => {
-      try {
-        const finesData = await fineService.getFines()
-        
-        const formattedFines: ExtendedFine[] = finesData.map((fine: any) => ({
-          id: fine.id,
-          autoNumber: fine.auto_number,
-          date: fine.infraction_date ? new Date(fine.infraction_date).toLocaleDateString('pt-BR') : '-',
-          vehicle: fine.vehicle_plate ? `Placa ${fine.vehicle_plate}` : '-',
-          driver: fine.driver_name || '-',
-          description: fine.description || '-',
-          category: fine.category,
-          value: Number(fine.value),
-          points: fine.points,
-          status: fine.status === 'aberto' ? 'Em Aberto' : (fine.status === 'pago' ? 'Pago' : 'Em Recurso'),
-          daysRemaining: fine.due_date ? Math.ceil((new Date(fine.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null,
-          lastUpdate: fine.updated_at ? new Date(fine.updated_at).toLocaleDateString('pt-BR') : '-'
-        }))
-        setFines(formattedFines)
-
-        // Compute Metrics
-        const catCount: Record<string, number> = {}
-        const monthCost: Record<string, number> = {}
-        const vehicleCount: Record<string, number> = {}
-        const driverPoints: Record<string, number> = {}
-
-        finesData.forEach((f: any) => {
-          // Categories
-          const cat = f.category || "Outros"
-          catCount[cat] = (catCount[cat] || 0) + 1
-
-          // Monthly
-          if (f.infraction_date) {
-            const d = new Date(f.infraction_date)
-            const monthStr = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
-            monthCost[monthStr] = (monthCost[monthStr] || 0) + Number(f.value)
-          }
-
-          // Vehicle Critical
-          if (f.vehicle_plate) {
-            vehicleCount[f.vehicle_plate] = (vehicleCount[f.vehicle_plate] || 0) + 1
-          }
-
-          // Driver Points
-          if (f.driver_name) {
-            driverPoints[f.driver_name] = (driverPoints[f.driver_name] || 0) + Number(f.points)
-          }
-        })
-
-        setCategoryData(Object.entries(catCount).map(([name, value]) => ({ name, value })))
-        setMonthData(Object.entries(monthCost).map(([name, value]) => ({ name, value })))
-        
-        // Mock unit data as fines don't have units directly
-        setUnitData([{ name: "Geral", value: finesData.length }])
-
-        // Compute insights
-        let maxVec = "N/A", maxVecCount = 0
-        Object.entries(vehicleCount).forEach(([v, c]) => { if (c > maxVecCount) { maxVecCount = c; maxVec = v } })
-
-        let maxDrv = "N/A", maxDrvPts = 0
-        Object.entries(driverPoints).forEach(([d, p]) => { if (p > maxDrvPts) { maxDrvPts = p; maxDrv = d } })
-
-        setInsights({
-          criticalVehicle: { title: maxVec, value: `${maxVecCount} Multas`, description: "Veículo com mais infrações" },
-          criticalDriver: { title: maxDrv, value: `${maxDrvPts} Pontos`, description: "Maior pontuação acumulada" },
-          trend: { value: "N/A", description: "Comparativo não disponível", isPositive: true }
-        })
-
-      } catch (error) {
-        console.error("Erro ao buscar multas:", error)
-      }
-    }
-    
-    fetchFines()
   }, [])
+
+  const fetchFinesData = async () => {
+    try {
+      const finesData = await fineService.getFines()
+      
+      const formattedFines: ExtendedFine[] = finesData.map((fine: any) => ({
+        id: fine.id,
+        autoNumber: fine.auto_number,
+        date: fine.infraction_date ? new Date(fine.infraction_date).toLocaleDateString('pt-BR') : '-',
+        vehicle: fine.vehicle_plate ? `Placa ${fine.vehicle_plate}` : '-',
+        driver: fine.driver_name || '-',
+        description: fine.description || '-',
+        category: fine.category,
+        value: Number(fine.value),
+        points: fine.points,
+        status: fine.status === 'aberto' ? 'Em Aberto' : (fine.status === 'pago' ? 'Pago' : 'Em Recurso'),
+        daysRemaining: fine.due_date ? Math.ceil((new Date(fine.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null,
+        lastUpdate: fine.updated_at ? new Date(fine.updated_at).toLocaleDateString('pt-BR') : '-'
+      }))
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("swr_cache_fines", JSON.stringify(formattedFines))
+      }
+
+      // Compute Metrics
+      const catCount: Record<string, number> = {}
+      const monthCost: Record<string, number> = {}
+      const vehicleCount: Record<string, number> = {}
+      const driverPoints: Record<string, number> = {}
+
+      finesData.forEach((f: any) => {
+        // Categories
+        const cat = f.category || "Outros"
+        catCount[cat] = (catCount[cat] || 0) + 1
+
+        // Monthly
+        if (f.infraction_date) {
+          const d = new Date(f.infraction_date)
+          const monthStr = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
+          monthCost[monthStr] = (monthCost[monthStr] || 0) + Number(f.value)
+        }
+
+        // Vehicle Critical
+        if (f.vehicle_plate) {
+          vehicleCount[f.vehicle_plate] = (vehicleCount[f.vehicle_plate] || 0) + 1
+        }
+
+        // Driver Points
+        if (f.driver_name) {
+          driverPoints[f.driver_name] = (driverPoints[f.driver_name] || 0) + Number(f.points)
+        }
+      })
+
+      const categoryData = Object.entries(catCount).map(([name, value]) => ({ name, value }))
+      const monthData = Object.entries(monthCost).map(([name, value]) => ({ name, value }))
+      
+      // Mock unit data as fines don't have units directly
+      const unitData = [{ name: "Geral", value: finesData.length }]
+
+      // Compute insights
+      let maxVec = "N/A", maxVecCount = 0
+      Object.entries(vehicleCount).forEach(([v, c]) => { if (c > maxVecCount) { maxVecCount = c; maxVec = v } })
+
+      let maxDrv = "N/A", maxDrvPts = 0
+      Object.entries(driverPoints).forEach(([d, p]) => { if (p > maxDrvPts) { maxDrvPts = p; maxDrv = d } })
+
+      const insights = {
+        criticalVehicle: { title: maxVec, value: `${maxVecCount} Multas`, description: "Veículo com mais infrações" },
+        criticalDriver: { title: maxDrv, value: `${maxDrvPts} Pontos`, description: "Maior pontuação acumulada" },
+        trend: { value: "N/A", description: "Comparativo não disponível", isPositive: true }
+      }
+
+      return { fines: formattedFines, categoryData, monthData, unitData, insights }
+    } catch (error) {
+      console.error("Erro ao buscar multas:", error)
+      return { fines: [], categoryData: [], monthData: [], unitData: [], insights: null }
+    }
+  }
+
+  const { data, isLoading, mutate } = useSWR('fines_dashboard_data', fetchFinesData, { revalidateOnFocus: false })
+  
+  const fines = data?.fines || []
+  const categoryData = data?.categoryData || []
+  const monthData = data?.monthData || []
+  const unitData = data?.unitData || []
+  const insights = data?.insights || {
+    criticalVehicle: { title: "N/A", value: "0 Multas", description: "Sem dados" },
+    criticalDriver: { title: "N/A", value: "0 Pontos", description: "Sem dados" },
+    trend: { value: "0%", description: "Sem dados", isPositive: true }
+  }
 
   const handleDensityChange = (newDensity: TableDensity) => {
     setDensity(newDensity)
@@ -496,6 +502,7 @@ export default function FinesPage() {
             density={density}
             searchKey="autoNumber" 
             searchValue={globalFilter}
+            isLoading={isLoading}
             onRowClick={handleRowClick}
             emptyStateTitle="Nenhuma infração encontrada"
             emptyStateDescription="Tente ajustar os filtros da busca."

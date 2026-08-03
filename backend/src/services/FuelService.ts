@@ -70,7 +70,7 @@ export class FuelService {
             LEFT JOIN units u ON f.unit_id = u.id
             ORDER BY f.fuel_date DESC`,
         )
-        return result.rows.map((row) => this.mapToFuelRecord(row))
+        return (result.rows || []).map((row: any) => this.mapToFuelRecord(row))
     }
 
     async getByVehicle(vehicleId: string): Promise<FuelRecord[]> {
@@ -84,7 +84,7 @@ export class FuelService {
             ORDER BY f.fuel_date DESC`,
             [vehicleId],
         )
-        return result.rows.map((row) => this.mapToFuelRecord(row))
+        return (result.rows || []).map((row: any) => this.mapToFuelRecord(row))
     }
 
     async getById(id: string): Promise<FuelRecord | null> {

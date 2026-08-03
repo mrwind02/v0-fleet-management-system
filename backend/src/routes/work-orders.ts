@@ -184,7 +184,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const [woRes, servicesRes, partsRes, historyRes] = await Promise.all([
+    const [woRes, servicesRes, partsRes, historyRes, attachmentsRes] = await Promise.all([
       pool.query(`
         SELECT w.*, 
           v.plate as vehicle_plate, v.brand as vehicle_brand, v.model as vehicle_model, v.year as vehicle_year,
@@ -197,6 +197,7 @@ router.get('/:id', async (req, res) => {
       pool.query(`SELECT * FROM work_order_services WHERE work_order_id = $1 ORDER BY created_at`, [id]),
       pool.query(`SELECT * FROM work_order_parts WHERE work_order_id = $1 ORDER BY created_at`, [id]),
       pool.query(`SELECT * FROM work_order_history WHERE work_order_id = $1 ORDER BY created_at DESC`, [id]),
+      pool.query(`SELECT * FROM work_order_attachments WHERE work_order_id = $1 ORDER BY created_at DESC`, [id]),
     ]);
 
     if (woRes.rows.length === 0) {
@@ -208,6 +209,7 @@ router.get('/:id', async (req, res) => {
       services: servicesRes.rows,
       parts: partsRes.rows,
       history: historyRes.rows,
+      attachments: attachmentsRes.rows,
     });
   } catch (error) {
     console.error('Error fetching work order:', error);
@@ -221,26 +223,47 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
     const {
-      type, priority, vehicle_id, driver_id, unit, workshop_name, workshop_type,
+      number, type, priority, vehicle_id, driver_id, unit, workshop_name, workshop_type,
       responsible, origin, description, diagnosis, notes, opened_at, estimated_at, km_opening,
       cost_labor, cost_towing, cost_others
     } = req.body;
 
-    const woResult = await client.query(`
-      INSERT INTO work_orders (
-        type, priority, vehicle_id, driver_id, unit, workshop_name, workshop_type,
-        responsible, origin, description, diagnosis, notes, opened_at, estimated_at, km_opening,
-        cost_labor, cost_towing, cost_others
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
-      RETURNING *
-    `, [
-      type || 'Corretiva', priority || 'Média',
-      vehicle_id || null, driver_id || null, unit || null,
-      workshop_name || null, workshop_type || 'Externa', responsible || null,
-      origin || 'Manual', description || null, diagnosis || null, notes || null,
-      opened_at || new Date(), estimated_at || null, km_opening || null,
-      cost_labor || 0, cost_towing || 0, cost_others || 0
-    ]);
+    let woResult;
+    const parsedNumber = number ? parseInt(number.toString(), 10) : null;
+    if (parsedNumber && !isNaN(parsedNumber)) {
+      woResult = await client.query(`
+        INSERT INTO work_orders (
+          number, type, priority, vehicle_id, driver_id, unit, workshop_name, workshop_type,
+          responsible, origin, description, diagnosis, notes, opened_at, estimated_at, km_opening,
+          cost_labor, cost_towing, cost_others
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+        RETURNING *
+      `, [
+        parsedNumber,
+        type || 'Corretiva', priority || 'Média',
+        vehicle_id || null, driver_id || null, unit || null,
+        workshop_name || null, workshop_type || 'Externa', responsible || null,
+        origin || 'Manual', description || null, diagnosis || null, notes || null,
+        opened_at || new Date(), estimated_at || null, km_opening || null,
+        cost_labor || 0, cost_towing || 0, cost_others || 0
+      ]);
+    } else {
+      woResult = await client.query(`
+        INSERT INTO work_orders (
+          type, priority, vehicle_id, driver_id, unit, workshop_name, workshop_type,
+          responsible, origin, description, diagnosis, notes, opened_at, estimated_at, km_opening,
+          cost_labor, cost_towing, cost_others
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+        RETURNING *
+      `, [
+        type || 'Corretiva', priority || 'Média',
+        vehicle_id || null, driver_id || null, unit || null,
+        workshop_name || null, workshop_type || 'Externa', responsible || null,
+        origin || 'Manual', description || null, diagnosis || null, notes || null,
+        opened_at || new Date(), estimated_at || null, km_opening || null,
+        cost_labor || 0, cost_towing || 0, cost_others || 0
+      ]);
+    }
 
     const wo = woResult.rows[0];
 
@@ -271,13 +294,16 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      type, priority, vehicle_id, driver_id, unit, workshop_name, workshop_type,
+      number, type, priority, vehicle_id, driver_id, unit, workshop_name, workshop_type,
       responsible, origin, description, diagnosis, notes, opened_at, estimated_at, closed_at,
       km_opening, km_closing, cost_parts, cost_labor, cost_towing, cost_others
     } = req.body;
 
+    const parsedNumber = number ? parseInt(number.toString(), 10) : null;
+
     const result = await pool.query(`
       UPDATE work_orders SET
+        number = COALESCE($22, number),
         type = COALESCE($1, type),
         priority = COALESCE($2, priority),
         vehicle_id = COALESCE($3, vehicle_id),
@@ -308,7 +334,8 @@ router.put('/:id', async (req, res) => {
       estimated_at || null, closed_at || null,
       km_opening ?? null, km_closing || null,
       cost_parts ?? null, cost_labor ?? null, cost_towing ?? null, cost_others ?? null,
-      id
+      id,
+      parsedNumber && !isNaN(parsedNumber) ? parsedNumber : null
     ]);
 
     if (result.rows.length === 0) return res.status(404).json({ error: 'Work order not found' });
@@ -331,13 +358,13 @@ router.patch('/:id/status', async (req, res) => {
     if (current.rows.length === 0) return res.status(404).json({ error: 'Work order not found' });
 
     const oldStatus = current.rows[0].status;
-    const closedAtQueryPart = status === 'Concluída' || status === 'Cancelada' ? 'closed_at = NOW()' : 'closed_at = closed_at';
+    const isClosing = status === 'Concluída' || status === 'Cancelada';
 
     const result = await client.query(`
       UPDATE work_orders
-      SET status = $1, ${closedAtQueryPart}, updated_at = NOW()
+      SET status = $1, closed_at = CASE WHEN $3 THEN NOW() ELSE closed_at END, updated_at = NOW()
       WHERE id = $2 RETURNING *
-    `, [status, id]);
+    `, [status, id, isClosing]);
 
     await client.query(`
       INSERT INTO work_order_history (work_order_id, event_type, description, old_value, new_value, user_name)
@@ -347,16 +374,16 @@ router.patch('/:id/status', async (req, res) => {
     // Auto update vehicle status
     if (result.rows[0].vehicle_id) {
       if (status === 'Concluída' || status === 'Cancelada') {
-        const otherOS = await client.query(\`
+        const otherOS = await client.query(`
           SELECT id FROM work_orders 
           WHERE vehicle_id = $1 AND status NOT IN ('Concluída', 'Cancelada') AND id != $2 LIMIT 1
-        \`, [result.rows[0].vehicle_id, id]);
+        `, [result.rows[0].vehicle_id, id]);
         
         if (otherOS.rows.length === 0) {
-          await client.query(\`UPDATE vehicles SET status = 'operando' WHERE id = $1\`, [result.rows[0].vehicle_id]);
+          await client.query(`UPDATE vehicles SET status = 'operando' WHERE id = $1`, [result.rows[0].vehicle_id]);
         }
       } else {
-        await client.query(\`UPDATE vehicles SET status = 'manutencao' WHERE id = $1\`, [result.rows[0].vehicle_id]);
+        await client.query(`UPDATE vehicles SET status = 'manutencao' WHERE id = $1`, [result.rows[0].vehicle_id]);
       }
     }
 
@@ -368,6 +395,203 @@ router.patch('/:id/status', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   } finally {
     client.release();
+  }
+});
+
+// ─── SERVICES CRUD ────────────────────────────────────────────────────────────
+router.post('/:id/services', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { id } = req.params;
+    const { description, quantity, unit_time_hours, unit_price, responsible } = req.body;
+
+    const qty = parseFloat(quantity) || 1;
+    const price = parseFloat(unit_price) || 0;
+    const hours = unit_time_hours ? parseFloat(unit_time_hours) : null;
+
+    const serviceRes = await client.query(`
+      INSERT INTO work_order_services (work_order_id, description, quantity, unit_time_hours, unit_price, responsible)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `, [id, description, qty, hours, price, responsible || null]);
+
+    // Recalculate cost_labor
+    await client.query(`
+      UPDATE work_orders
+      SET cost_labor = (
+        SELECT COALESCE(SUM(total_price), 0) FROM work_order_services WHERE work_order_id = $1
+      ), updated_at = NOW()
+      WHERE id = $1
+    `, [id]);
+
+    await client.query(`
+      INSERT INTO work_order_history (work_order_id, event_type, description, new_value, user_name)
+      VALUES ($1, 'service_added', $2, $3, $4)
+    `, [id, `Serviço adicionado: ${description}`, (qty * price).toFixed(2), responsible || 'Sistema']);
+
+    await client.query('COMMIT');
+    res.status(201).json(serviceRes.rows[0]);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error adding service:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    client.release();
+  }
+});
+
+router.delete('/:id/services/:serviceId', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { id, serviceId } = req.params;
+
+    const delRes = await client.query(`DELETE FROM work_order_services WHERE id = $1 AND work_order_id = $2 RETURNING *`, [serviceId, id]);
+
+    // Recalculate cost_labor
+    await client.query(`
+      UPDATE work_orders
+      SET cost_labor = (
+        SELECT COALESCE(SUM(total_price), 0) FROM work_order_services WHERE work_order_id = $1
+      ), updated_at = NOW()
+      WHERE id = $1
+    `, [id]);
+
+    if (delRes.rows.length > 0) {
+      await client.query(`
+        INSERT INTO work_order_history (work_order_id, event_type, description, user_name)
+        VALUES ($1, 'service_removed', $2, 'Sistema')
+      `, [id, `Serviço removido: ${delRes.rows[0].description}`]);
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error removing service:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    client.release();
+  }
+});
+
+// ─── PARTS CRUD ───────────────────────────────────────────────────────────────
+router.post('/:id/parts', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { id } = req.params;
+    const { name, part_code, supplier, quantity, unit_price, situation } = req.body;
+
+    const qty = parseFloat(quantity) || 1;
+    const price = parseFloat(unit_price) || 0;
+
+    const partRes = await client.query(`
+      INSERT INTO work_order_parts (work_order_id, name, part_code, supplier, quantity, unit_price, situation)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `, [id, name, part_code || null, supplier || null, qty, price, situation || 'Disponível']);
+
+    // Recalculate cost_parts
+    await client.query(`
+      UPDATE work_orders
+      SET cost_parts = (
+        SELECT COALESCE(SUM(total_price), 0) FROM work_order_parts WHERE work_order_id = $1
+      ), updated_at = NOW()
+      WHERE id = $1
+    `, [id]);
+
+    await client.query(`
+      INSERT INTO work_order_history (work_order_id, event_type, description, new_value, user_name)
+      VALUES ($1, 'part_added', $2, $3, 'Sistema')
+    `, [id, `Peça adicionada: ${name}`, (qty * price).toFixed(2)]);
+
+    await client.query('COMMIT');
+    res.status(201).json(partRes.rows[0]);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error adding part:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    client.release();
+  }
+});
+
+router.delete('/:id/parts/:partId', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { id, partId } = req.params;
+
+    const delRes = await client.query(`DELETE FROM work_order_parts WHERE id = $1 AND work_order_id = $2 RETURNING *`, [partId, id]);
+
+    // Recalculate cost_parts
+    await client.query(`
+      UPDATE work_orders
+      SET cost_parts = (
+        SELECT COALESCE(SUM(total_price), 0) FROM work_order_parts WHERE work_order_id = $1
+      ), updated_at = NOW()
+      WHERE id = $1
+    `, [id]);
+
+    if (delRes.rows.length > 0) {
+      await client.query(`
+        INSERT INTO work_order_history (work_order_id, event_type, description, user_name)
+        VALUES ($1, 'part_removed', $2, 'Sistema')
+      `, [id, `Peça removida: ${delRes.rows[0].name}`]);
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error removing part:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    client.release();
+  }
+});
+
+// ─── ATTACHMENTS CRUD ─────────────────────────────────────────────────────────
+router.post('/:id/attachments', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, file_url, file_type, file_size } = req.body;
+    const result = await pool.query(`
+      INSERT INTO work_order_attachments (work_order_id, name, file_url, file_type, file_size)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
+    `, [id, name, file_url || '#', file_type || 'Documento', file_size || '1 MB']);
+
+    await pool.query(`
+      INSERT INTO work_order_history (work_order_id, event_type, description, new_value, user_name)
+      VALUES ($1, 'file_uploaded', $2, $3, 'Sistema')
+    `, [id, `Arquivo anexado: ${name}`, file_url || '']);
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error adding attachment:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+router.delete('/:id/attachments/:attachmentId', async (req, res) => {
+  try {
+    const { id, attachmentId } = req.params;
+    const delRes = await pool.query(`DELETE FROM work_order_attachments WHERE id = $1 AND work_order_id = $2 RETURNING *`, [attachmentId, id]);
+
+    if (delRes.rows.length > 0) {
+      await pool.query(`
+        INSERT INTO work_order_history (work_order_id, event_type, description, user_name)
+        VALUES ($1, 'file_removed', $2, 'Sistema')
+      `, [id, `Arquivo removido: ${delRes.rows[0].name}`]);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error removing attachment:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 

@@ -8,7 +8,9 @@ export interface Fine {
   category: string;
   description?: string;
   vehicle_id?: string;
+  vehicle_plate?: string;
   driver_id?: string;
+  driver_name?: string;
   value: number;
   points: number;
   due_date: string;

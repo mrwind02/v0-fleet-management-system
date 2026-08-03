@@ -1,5 +1,15 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
 
+export interface WorkOrderAttachment {
+  id: string
+  work_order_id: string
+  name: string
+  file_url: string
+  file_type?: string
+  file_size?: string
+  created_at: string
+}
+
 export interface WorkOrder {
   id: string
   number: number
@@ -34,6 +44,7 @@ export interface WorkOrder {
   services?: WorkOrderService[]
   parts?: WorkOrderPart[]
   history?: WorkOrderHistoryItem[]
+  attachments?: WorkOrderAttachment[]
   created_at: string
   updated_at: string
 }
@@ -134,5 +145,41 @@ export const workOrderService = {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, user_name: userName }),
+    }),
+
+  addService: (id: string, serviceData: Partial<WorkOrderService>) =>
+    fetchJson<WorkOrderService>(`${API_BASE_URL}/work-orders/${id}/services`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(serviceData),
+    }),
+
+  removeService: (id: string, serviceId: string) =>
+    fetchJson<{ success: boolean }>(`${API_BASE_URL}/work-orders/${id}/services/${serviceId}`, {
+      method: 'DELETE',
+    }),
+
+  addPart: (id: string, partData: Partial<WorkOrderPart>) =>
+    fetchJson<WorkOrderPart>(`${API_BASE_URL}/work-orders/${id}/parts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(partData),
+    }),
+
+  removePart: (id: string, partId: string) =>
+    fetchJson<{ success: boolean }>(`${API_BASE_URL}/work-orders/${id}/parts/${partId}`, {
+      method: 'DELETE',
+    }),
+
+  addAttachment: (id: string, attachmentData: Partial<WorkOrderAttachment>) =>
+    fetchJson<WorkOrderAttachment>(`${API_BASE_URL}/work-orders/${id}/attachments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(attachmentData),
+    }),
+
+  removeAttachment: (id: string, attachmentId: string) =>
+    fetchJson<{ success: boolean }>(`${API_BASE_URL}/work-orders/${id}/attachments/${attachmentId}`, {
+      method: 'DELETE',
     }),
 }

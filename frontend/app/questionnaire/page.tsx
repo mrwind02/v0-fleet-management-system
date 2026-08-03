@@ -4,31 +4,34 @@ import { useState, useEffect } from "react"
 import { useAuthStore } from "../../store/authStore"
 import { MainLayout } from "../../components/layout/MainLayout"
 import { questionnaireService, driverService } from "../../services/api"
+import useSWR from "swr"
 
 export default function QuestionnairePage() {
   const [isLoading, setIsLoading] = useState(false)
-  const [currentVehicle, setCurrentVehicle] = useState<any>(null)
-  const [lastResponse, setLastResponse] = useState<any>(null)
   const [gpsEnabled, setGpsEnabled] = useState(false)
   const user = useAuthStore((state) => state.user)
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (user?.id && user?.role === "driver") {
-        try {
-          const vehicleResponse = await driverService.getCurrentVehicle(user.id)
-          setCurrentVehicle(vehicleResponse.data.data)
-
-          const lastResp = await questionnaireService.getLatest(user.id)
-          setLastResponse(lastResp.data.data)
-        } catch (error) {
-          console.error("Error loading data:", error)
-        }
+  const fetchQuestionnaireData = async () => {
+    if (!user?.id || user?.role !== "driver") return null
+    try {
+      const [vehicleResponse, lastResp] = await Promise.all([
+        driverService.getCurrentVehicle(user.id),
+        questionnaireService.getLatest(user.id)
+      ])
+      return {
+        currentVehicle: vehicleResponse.data?.data || null,
+        lastResponse: lastResp.data?.data || null
       }
+    } catch (error) {
+      console.error("Error loading data:", error)
+      return null
     }
+  }
 
-    loadData()
-  }, [user])
+  const { data, mutate } = useSWR(user?.id && user?.role === "driver" ? `questionnaire_data_${user.id}` : null, fetchQuestionnaireData, { revalidateOnFocus: false })
+
+  const currentVehicle = data?.currentVehicle || null
+  const lastResponse = data?.lastResponse || null
 
   const handleResponse = async (status: "driving" | "stopped") => {
     setIsLoading(true)
@@ -49,7 +52,7 @@ export default function QuestionnairePage() {
         }
       }
 
-      const response = await questionnaireService.record({
+      await questionnaireService.record({
         driverId: user?.id,
         vehicleId: currentVehicle?.id,
         status,
@@ -58,7 +61,7 @@ export default function QuestionnairePage() {
         timestamp: new Date().toISOString(),
       })
 
-      setLastResponse(response.data.data)
+      mutate()
       alert(`Status registrado: ${status === "driving" ? "Rodando" : "Parado"}`)
     } catch (error: any) {
       console.error(error)
@@ -145,15 +148,19 @@ export default function QuestionnairePage() {
 }
 
 function HistoryList({ user, refreshTrigger }: { user: any, refreshTrigger: any }) {
-  const [history, setHistory] = useState<any[]>([])
-
-  useEffect(() => {
-    if (user?.id) {
-      questionnaireService.getByDriver(user.id, 10).then(res => {
-        setHistory(res.data.data)
-      }).catch(console.error)
+  const fetchHistory = async () => {
+    if (!user?.id) return []
+    try {
+      const res = await questionnaireService.getByDriver(user.id, 10)
+      return res.data?.data || []
+    } catch (error) {
+      console.error(error)
+      return []
     }
-  }, [user, refreshTrigger])
+  }
+
+  // The key now dynamically changes when refreshTrigger changes
+  const { data: history = [] } = useSWR(user?.id ? `questionnaire_history_${user.id}_${refreshTrigger?.timestampResponse || Date.now()}` : null, fetchHistory, { revalidateOnFocus: false })
 
   if (history.length === 0) return <p className="text-gray-500">Nenhum histórico recente.</p>
 

@@ -16,10 +16,23 @@ import { InsightCard } from "@/components/ui/insight-card"
 import { AlertPanel, AlertItem } from "@/components/ui/alert-panel"
 import { ChartCard } from "@/components/ui/chart-card"
 import { NewDocumentModal } from "./new-document-modal"
-import { FileText, FileWarning, AlertCircle, FileClock, ShieldCheck, Download, Plus, MoreHorizontal } from "lucide-react"
+import { FileText, FileWarning, AlertCircle, FileClock, ShieldCheck, Download, Plus, MoreHorizontal, Edit, Trash } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
 import { ColumnDef } from "@tanstack/react-table"
 import { cn } from "@/utils/utils"
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, YAxis, CartesianGrid, Label } from "recharts"
+import useSWR from "swr"
 
 type RealDocument = {
   id: string
@@ -36,25 +49,15 @@ type RealDocument = {
 
 export default function DocumentsPage() {
   const router = useRouter()
-  const [documents, setDocuments] = useState<RealDocument[]>([])
-  const [metrics, setMetrics] = useState<DocumentDashboardMetrics | null>(null)
-  const [complianceData, setComplianceData] = useState<any[]>([])
-  const [categoryData, setCategoryData] = useState<any[]>([])
-  const [expiryData, setExpiryData] = useState<any[]>([])
-  const [alerts, setAlerts] = useState<AlertItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+
   const [globalFilter, setGlobalFilter] = useState("")
   const [density, setDensity] = useState<TableDensity>("comfortable")
   const [isModalOpen, setIsModalOpen] = useState(false)
-
-  useEffect(() => {
-    const savedDensity = localStorage.getItem("fleet:table-density") as TableDensity
-    if (savedDensity) setDensity(savedDensity)
-    fetchData()
-  }, [])
+  const [documentToEdit, setDocumentToEdit] = useState<RealDocument | null>(null)
+  const [documentToDelete, setDocumentToDelete] = useState<RealDocument | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const fetchData = async () => {
-    setIsLoading(true)
     try {
       const [metricsData, compData, catData, expiryMonthData, docsData] = await Promise.all([
         documentDashboardService.getMetrics(),
@@ -63,11 +66,6 @@ export default function DocumentsPage() {
         documentDashboardService.getExpiryByMonth(),
         documentService.getDocuments()
       ])
-
-      setMetrics(metricsData)
-      setComplianceData(compData)
-      setCategoryData(catData)
-      setExpiryData(expiryMonthData)
 
       // Build real-time alerts from metrics
       const dynamicAlerts: AlertItem[] = []
@@ -95,7 +93,6 @@ export default function DocumentsPage() {
           description: "Aguardando aprovação ou complemento."
         })
       }
-      setAlerts(dynamicAlerts)
 
       const formattedDocs = (docsData || []).map((doc: any) => ({
         ...doc,
@@ -111,13 +108,33 @@ export default function DocumentsPage() {
           : 0,
       }))
 
-      setDocuments(formattedDocs)
+      return {
+        metrics: metricsData,
+        complianceData: compData,
+        categoryData: catData,
+        expiryData: expiryMonthData,
+        alerts: dynamicAlerts,
+        documents: formattedDocs
+      }
     } catch (error) {
       console.error(error)
-    } finally {
-      setIsLoading(false)
+      return null
     }
   }
+
+  const { data, isLoading, mutate } = useSWR('documents_dashboard_data', fetchData, { revalidateOnFocus: false })
+
+  const metrics = data?.metrics || null
+  const complianceData = data?.complianceData || []
+  const categoryData = data?.categoryData || []
+  const expiryData = data?.expiryData || []
+  const alerts = data?.alerts || []
+  const documents = data?.documents || []
+
+  useEffect(() => {
+    const savedDensity = localStorage.getItem("fleet:table-density") as TableDensity
+    if (savedDensity) setDensity(savedDensity)
+  }, [])
 
   const handleDensityChange = (newDensity: TableDensity) => {
     setDensity(newDensity)
@@ -126,6 +143,21 @@ export default function DocumentsPage() {
 
   const handleRowClick = (doc: RealDocument) => {
     router.push(`/documents/${doc.id}`)
+  }
+
+  const handleDelete = async () => {
+    if (!documentToDelete) return
+    try {
+      setIsDeleting(true)
+      await documentService.deleteDocument(documentToDelete.id)
+      toast.success("Documento excluído com sucesso")
+      mutate()
+      setDocumentToDelete(null)
+    } catch (error) {
+      toast.error("Erro ao excluir documento")
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const columns: ColumnDef<RealDocument>[] = [
@@ -208,11 +240,27 @@ export default function DocumentsPage() {
     },
     {
       id: "actions",
-      cell: () => (
-        <Button variant="ghost" size="icon" className="h-6 w-6">
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      )
+      cell: ({ row }) => {
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setDocumentToEdit(row.original)}>
+                  <Edit className="mr-2 h-4 w-4" /> Editar Documento
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDocumentToDelete(row.original)} className="text-red-600 focus:text-red-600">
+                  <Trash className="mr-2 h-4 w-4" /> Excluir Documento
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )
+      }
     }
   ]
 
@@ -420,7 +468,40 @@ export default function DocumentsPage() {
 
       </div>
 
-      <NewDocumentModal open={isModalOpen} onOpenChange={setIsModalOpen} onSuccess={fetchData} />
+      <NewDocumentModal 
+        open={isModalOpen || !!documentToEdit} 
+        onOpenChange={(open) => {
+          setIsModalOpen(open);
+          if (!open) setDocumentToEdit(null);
+        }} 
+        onSuccess={() => mutate()} 
+        document={documentToEdit}
+      />
+
+      <AlertDialog open={!!documentToDelete} onOpenChange={(open) => !open && setDocumentToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o documento
+              <span className="font-semibold text-foreground"> {documentToDelete?.name}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }} 
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   )
 }

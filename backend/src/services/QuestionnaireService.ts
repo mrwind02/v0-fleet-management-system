@@ -31,7 +31,7 @@ export class QuestionnaireService {
       [driverId, limit],
     )
 
-    return result.rows.map((row) => this.mapToQuestionnaire(row))
+    return (result.rows || []).map((row: any) => this.mapToQuestionnaire(row))
   }
 
   async getByDateRange(startDate: Date, endDate: Date): Promise<DriverQuestionnaire[]> {
@@ -45,7 +45,7 @@ export class QuestionnaireService {
       [startDate, endDate],
     )
 
-    return result.rows.map((row) => this.mapToQuestionnaire(row))
+    return (result.rows || []).map((row: any) => this.mapToQuestionnaire(row))
   }
 
   async getLatestByDriver(driverId: string): Promise<DriverQuestionnaire | null> {

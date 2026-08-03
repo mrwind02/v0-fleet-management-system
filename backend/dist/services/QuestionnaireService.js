@@ -16,7 +16,7 @@ class QuestionnaireService {
        FROM driver_questionnaire 
        WHERE driver_id = $1 
        ORDER BY timestamp_response DESC LIMIT $2`, [driverId, limit]);
-        return result.rows.map((row) => this.mapToQuestionnaire(row));
+        return (result.rows || []).map((row) => this.mapToQuestionnaire(row));
     }
     async getByDateRange(startDate, endDate) {
         const result = await (0, database_1.query)(`SELECT id, driver_id, vehicle_id, status, gps_latitude, gps_longitude, 
@@ -25,7 +25,7 @@ class QuestionnaireService {
        FROM driver_questionnaire 
        WHERE timestamp_response >= $1 AND timestamp_response <= $2
        ORDER BY timestamp_response DESC`, [startDate, endDate]);
-        return result.rows.map((row) => this.mapToQuestionnaire(row));
+        return (result.rows || []).map((row) => this.mapToQuestionnaire(row));
     }
     async getLatestByDriver(driverId) {
         const result = await (0, database_1.query)(`SELECT id, driver_id, vehicle_id, status, gps_latitude, gps_longitude, 

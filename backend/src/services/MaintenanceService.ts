@@ -54,7 +54,7 @@ export class MaintenanceService {
     sql += " ORDER BY maintenance_date DESC"
 
     const result = await query(sql, params)
-    return result.rows.map((row) => this.mapToMaintenance(row))
+    return (result.rows || []).map((row: any) => this.mapToMaintenance(row))
   }
 
   async getAll(filters?: { vehicleId?: string; maintenanceType?: string; startDate?: Date; endDate?: Date }): Promise<
@@ -94,7 +94,7 @@ export class MaintenanceService {
     sql += " ORDER BY m.maintenance_date DESC"
 
     const result = await query(sql, params)
-    return result.rows.map((row) => this.mapToMaintenance(row))
+    return (result.rows || []).map((row: any) => this.mapToMaintenance(row))
   }
 
   async getById(id: string): Promise<MaintenanceRecord | null> {

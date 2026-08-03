@@ -18,6 +18,8 @@ const fines_1 = __importDefault(require("./fines"));
 const documents_1 = __importDefault(require("./documents"));
 const dashboard_1 = __importDefault(require("./dashboard"));
 const units_1 = __importDefault(require("./units"));
+const expenses_1 = __importDefault(require("./expenses"));
+const suppliers_1 = __importDefault(require("./suppliers"));
 function setupRoutes(app) {
     // Health check for monitoring
     app.get("/api/health", (req, res) => {
@@ -37,4 +39,6 @@ function setupRoutes(app) {
     app.use("/api/documents", documents_1.default);
     app.use("/api/dashboard", dashboard_1.default);
     app.use("/api/units", units_1.default);
+    app.use("/api/expenses", expenses_1.default);
+    app.use("/api/suppliers", suppliers_1.default);
 }

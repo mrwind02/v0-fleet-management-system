@@ -38,7 +38,7 @@ class FuelService {
             LEFT JOIN drivers d ON f.driver_id = d.id
             LEFT JOIN units u ON f.unit_id = u.id
             ORDER BY f.fuel_date DESC`);
-        return result.rows.map((row) => this.mapToFuelRecord(row));
+        return (result.rows || []).map((row) => this.mapToFuelRecord(row));
     }
     async getByVehicle(vehicleId) {
         const result = await (0, database_1.query)(`SELECT f.*, v.plate, d.name as driver_name, u.name as unit_name
@@ -48,7 +48,7 @@ class FuelService {
             LEFT JOIN units u ON f.unit_id = u.id
             WHERE f.vehicle_id = $1
             ORDER BY f.fuel_date DESC`, [vehicleId]);
-        return result.rows.map((row) => this.mapToFuelRecord(row));
+        return (result.rows || []).map((row) => this.mapToFuelRecord(row));
     }
     async getById(id) {
         const result = await (0, database_1.query)(`SELECT f.*, v.plate, d.name as driver_name, u.name as unit_name

@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button"
 import { EmptyState } from "./empty-state"
 import { cn } from "@/utils/utils"
 
-export type TableDensity = "compact" | "comfortable" | "spaced"
+export type TableDensity = "compact" | "comfortable" | "spacious"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -36,6 +36,7 @@ interface DataTableProps<TData, TValue> {
   density?: TableDensity
   searchKey?: string
   searchValue?: string
+  isLoading?: boolean
   onRowClick?: (row: TData) => void
   emptyStateTitle?: string
   emptyStateDescription?: string
@@ -47,6 +48,7 @@ export function DataTable<TData, TValue>({
   density = "comfortable",
   searchKey,
   searchValue = "",
+  isLoading = false,
   onRowClick,
   emptyStateTitle = "Nenhum registro",
   emptyStateDescription = "Não há dados para exibir nesta tabela no momento."
@@ -86,7 +88,16 @@ export function DataTable<TData, TValue>({
   const densityClasses = {
     compact: "py-1.5 px-3 text-[11px]",
     comfortable: "py-3 px-4 text-xs",
-    spaced: "py-4 px-5 text-sm"
+    spacious: "py-4 px-5 text-sm"
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 bg-card rounded-xl border shadow-sm min-h-[220px]">
+        <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600"></div>
+        <p className="text-xs text-muted-foreground mt-3 font-medium">Carregando registros...</p>
+      </div>
+    )
   }
 
   if (data.length === 0) {

@@ -2,16 +2,18 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { vehicleService } from "@/services/api"
+import { vehicleService, fuelService, expenseService, workOrderService } from "@/services/api"
+import { fineService } from "@/services/fine.service"
 import { vehicleDashboardService, VehicleDashboardMetrics } from "@/services/vehicle-dashboard"
 import { AppLayout } from "@/components/layout/AppLayout"
 import { MetricCard } from "@/components/ui/metric-card"
 import { Button } from "@/components/ui/button"
 import { DataTable, TableDensity } from "@/components/ui/data-table"
-import { Toolbar } from "@/components/ui/toolbar"
+import { TableToolbar } from "@/components/ui/table-toolbar"
 import { Badge } from "@/components/ui/badge"
 import { ChevronRight, Plus, Download, Car, Wrench, Activity, AlertCircle, CalendarClock, DollarSign, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
+import useSWR from "swr"
 
 // Extended type combining real API data with mock data as requested
 type ExtendedVehicle = {
@@ -33,59 +35,167 @@ type ExtendedVehicle = {
   lastUpdate: string
 }
 
+function formatDriverName(name?: string): string {
+  if (!name || name === "Não Atribuído" || name === "Sem motorista") return "Não Atribuído"
+  if (name === name.toUpperCase()) {
+    const lowercaseWords = ["de", "da", "do", "das", "dos", "e"]
+    return name
+      .toLowerCase()
+      .split(" ")
+      .map((word, i) => {
+        if (i > 0 && lowercaseWords.includes(word)) return word
+        return word.charAt(0).toUpperCase() + word.slice(1)
+      })
+      .join(" ")
+  }
+  return name
+}
+
 export default function VehiclesPage() {
   const router = useRouter()
-  const [vehicles, setVehicles] = useState<ExtendedVehicle[]>([])
-  const [metrics, setMetrics] = useState<VehicleDashboardMetrics | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [globalFilter, setGlobalFilter] = useState("")
   const [density, setDensity] = useState<TableDensity>("compact")
 
   useEffect(() => {
-    // Carrega preferência de densidade salva
     const savedDensity = localStorage.getItem("fleet:table-density") as TableDensity
     if (savedDensity) setDensity(savedDensity)
-
-    fetchData()
   }, [])
 
   const fetchData = async () => {
-    setIsLoading(true)
     try {
-      const [metricsData, vehiclesRes] = await Promise.all([
-        vehicleDashboardService.getMetrics(),
-        vehicleService.getAll()
-      ])
-      
-      setMetrics(metricsData)
-      
-      const mappedVehicles: ExtendedVehicle[] = (vehiclesRes.data.data || []).map((v: any) => {
+      let finesList: any[] = []
+      try {
+        const fines = await fineService.getFines()
+        finesList = Array.isArray(fines) ? fines : []
+      } catch (e) {}
+
+      let fuelList: any[] = []
+      try {
+        const fuelRes = await fuelService.getAll()
+        fuelList = fuelRes.data?.data || fuelRes.data || (Array.isArray(fuelRes) ? fuelRes : [])
+      } catch (e) {}
+
+      let expenseList: any[] = []
+      try {
+        const expenseRes = await expenseService.getAll()
+        expenseList = Array.isArray(expenseRes) ? expenseRes : (expenseRes as any)?.data?.data || (expenseRes as any)?.data || []
+      } catch (e) {}
+
+      let workOrderList: any[] = []
+      try {
+        const woRes = await workOrderService.getAll()
+        workOrderList = Array.isArray(woRes) ? woRes : (woRes as any)?.data?.data || (woRes as any)?.data || []
+      } catch (e) {}
+
+      const vehiclesRes = await vehicleService.getAll()
+      const rawApiVehicles = vehiclesRes.data?.data || vehiclesRes.data || []
+
+      // Delete old local caches
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("frotaone_created_vehicles")
+        localStorage.removeItem("frotaone_fuel_records")
+        localStorage.removeItem("frotaone_expense_records")
+      }
+
+      const allRaw = [...rawApiVehicles]
+
+      const mappedVehicles: ExtendedVehicle[] = allRaw.map((v: any) => {
+        let realUnit = v.unitName || v.unit_name || "-"
+        let realDriver = v.driverName || v.driver_name || "Não Atribuído"
+
+
+        const vehicleFines = finesList.filter((f: any) => 
+          (f.vehiclePlate && v.plate && f.vehiclePlate.toUpperCase() === v.plate.toUpperCase()) || 
+          (f.vehicle_plate && v.plate && f.vehicle_plate.toUpperCase() === v.plate.toUpperCase()) ||
+          (f.vehicleId && String(f.vehicleId) === String(v.id)) ||
+          (f.vehicle_id && String(f.vehicle_id) === String(v.id)) ||
+          (f.vehicle && v.plate && String(f.vehicle).toUpperCase().includes(v.plate.toUpperCase()))
+        )
+        const finesSum = vehicleFines.reduce((acc: number, f: any) => acc + (Number(f.amount || f.value) || 0), 0)
+
+        const vehicleFuelings = fuelList.filter((f: any) =>
+          (f.vehicleId && String(f.vehicleId) === String(v.id)) ||
+          (f.vehicle_id && String(f.vehicle_id) === String(v.id)) ||
+          (f.vehiclePlate && v.plate && f.vehiclePlate.toUpperCase() === v.plate.toUpperCase()) ||
+          (f.vehicle_plate && v.plate && f.vehicle_plate.toUpperCase() === v.plate.toUpperCase())
+        )
+        const fuelSum = vehicleFuelings.reduce((acc: number, f: any) => acc + (Number(f.cost || f.totalCost) || 0), 0)
+
+        const vehicleExpenses = expenseList.filter((ex: any) =>
+          (ex.vehicleId && String(ex.vehicleId) === String(v.id)) ||
+          (ex.vehicle_id && String(ex.vehicle_id) === String(v.id)) ||
+          (ex.vehiclePlate && v.plate && ex.vehiclePlate.toUpperCase() === v.plate.toUpperCase()) ||
+          (ex.vehicle_plate && v.plate && ex.vehicle_plate.toUpperCase() === v.plate.toUpperCase()) ||
+          (ex.vehicle_info && v.plate && String(ex.vehicle_info).toUpperCase().includes(v.plate.toUpperCase()))
+        )
+        const expenseSum = vehicleExpenses.reduce((acc: number, ex: any) => acc + (Number(ex.amount || ex.value) || 0), 0)
+
+        const vehicleWorkOrders = workOrderList.filter((wo: any) => {
+          const isConcluded = wo.status?.toLowerCase() === 'concluída' || wo.status?.toLowerCase() === 'concluida'
+          const matchesVehicle = (wo.vehicle_id && String(wo.vehicle_id) === String(v.id)) ||
+                                 (wo.vehicleId && String(wo.vehicleId) === String(v.id)) ||
+                                 (wo.vehicle_plate && v.plate && wo.vehicle_plate.toUpperCase() === v.plate.toUpperCase()) ||
+                                 (wo.vehiclePlate && v.plate && wo.vehiclePlate.toUpperCase() === v.plate.toUpperCase())
+          return isConcluded && matchesVehicle
+        })
+        const woSum = vehicleWorkOrders.reduce((acc: number, wo: any) => acc + (Number(wo.cost_total || wo.costTotal) || 0), 0)
+
+        const totalVehicleCost = finesSum + fuelSum + expenseSum + woSum
+
         return {
           id: v.id,
-          plate: v.plate,
-          brand: v.brand,
-          model: v.model,
-          year: v.year,
-          driverName: v.driverName || "Não Atribuído",
-          isActive: v.isActive,
-          
-          unit: v.unitName || "-", 
-          status: v.status || (v.isActive ? "operando" : "inativo"),
-          currentOdometer: v.currentOdometer || 0,
-          nextMaintenance: "-", // Could be computed from maintenance records
-          docStatus: "ok", // Could be computed from documents
-          monthlyCost: v.monthlyCost || 0,
-          lastUpdate: new Date(v.updatedAt || Date.now()).toLocaleDateString('pt-BR')
+          plate: v.plate || "S/PLACA",
+          brand: v.brand || "",
+          model: v.model || "",
+          year: v.year || 2024,
+          driverName: formatDriverName(realDriver),
+          isActive: v.isActive !== false,
+          unit: realUnit,
+          status: v.status || (v.isActive !== false ? "operando" : "inativo"),
+          currentOdometer: v.currentOdometer || v.current_odometer || 0,
+          nextMaintenance: "-",
+          docStatus: "ok",
+          monthlyCost: totalVehicleCost,
+          lastUpdate: new Date(v.updatedAt || v.updated_at || Date.now()).toLocaleDateString('pt-BR')
         }
       })
+
+      const totalCount = mappedVehicles.length
+      const activeCount = mappedVehicles.filter((v) => v.status === "operando").length
+      const maintenanceCount = mappedVehicles.filter((v) => v.status === "manutencao" || v.status === "oficina").length
+      const inactiveCount = mappedVehicles.filter((v) => v.status === "inativo").length
+      const totalMonthlyCost = mappedVehicles.reduce((sum, v) => sum + (v.monthlyCost || 0), 0)
+      const availability = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 100
+
+      const computedMetrics: VehicleDashboardMetrics = {
+        totalVehicles: totalCount,
+        activeVehicles: activeCount,
+        maintenanceVehicles: maintenanceCount,
+        inactiveVehicles: inactiveCount,
+        averageConsumption: 0,
+        fleetAvailability: availability,
+        monthlyCost: totalMonthlyCost,
+        expiringDocuments: 0
+      }
       
-      setVehicles(mappedVehicles)
+      const result = { vehicles: mappedVehicles, metrics: computedMetrics }
+      if (typeof window !== "undefined") {
+        localStorage.setItem("swr_cache_vehicles", JSON.stringify(result))
+      }
+      return result
     } catch (error) {
       console.error(error)
-    } finally {
-      setIsLoading(false)
+      return { vehicles: [], metrics: null }
     }
   }
+
+  const { data, isLoading } = useSWR('dashboard_vehicles_and_metrics', fetchData, {
+    revalidateOnFocus: false
+  })
+
+  const vehicles = data?.vehicles || []
+  const metrics = data?.metrics || null
+  const isTableLoading = isLoading && vehicles.length === 0
 
   const handleDensityChange = (newDensity: TableDensity) => {
     setDensity(newDensity)
@@ -184,7 +294,7 @@ export default function VehiclesPage() {
     },
     {
       accessorKey: "monthlyCost",
-      header: "Custo Mês",
+      header: "Custo",
       cell: ({ row }) => (
         <span className="font-medium whitespace-nowrap">
           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(row.original.monthlyCost)}
@@ -220,13 +330,6 @@ export default function VehiclesPage() {
           </div>
           
           <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-            <Button variant="outline" className="h-9 text-xs shadow-sm">
-              <Download className="mr-2 h-4 w-4" />
-              Exportar
-            </Button>
-            <Button variant="outline" className="h-9 text-xs shadow-sm">
-              Importar
-            </Button>
             <Button 
               className="bg-blue-600 hover:bg-blue-700 text-white h-9 text-xs font-semibold shadow-sm"
               onClick={() => router.push('/vehicles/new')}
@@ -275,36 +378,34 @@ export default function VehiclesPage() {
               iconColor="text-blue-600 dark:text-blue-400"
             />
             <MetricCard
-              title="Custo Total Mês"
-              value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(metrics.monthlyCost)}
+              title="Custo Total"
+              value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(metrics.monthlyCost)}
               icon={<DollarSign className="h-4 w-4" />}
               iconBgColor="bg-green-100 dark:bg-green-900/30"
               iconColor="text-green-600 dark:text-green-400"
+              className="[&_.truncate]:!whitespace-normal [&_.truncate]:!overflow-visible"
             />
           </div>
         )}
 
-        {/* Toolbar & DataTable */}
-        <div className="mt-2">
-          <Toolbar 
+        {/* Toolbar & DataTable com espaçamento de 3mm */}
+        <div className="mt-2 space-y-3">
+          <TableToolbar 
             searchValue={globalFilter}
-            onSearch={setGlobalFilter}
-            searchPlaceholder="Buscar por placa, modelo, motorista..."
+            onSearchChange={setGlobalFilter}
+            searchPlaceholder="Buscar por placa, modelo, marca ou motorista..."
+            allowImport={true}
             density={density}
             onDensityChange={handleDensityChange}
-            extraActions={
-              <Button variant="secondary" size="sm" className="h-8 text-xs font-medium">
-                Ações em lote
-              </Button>
-            }
           />
 
           <DataTable 
             columns={columns} 
             data={vehicles} 
             density={density}
-            searchKey="plate" // using simple filtering by plate for this demo
+            searchKey="plate"
             searchValue={globalFilter}
+            isLoading={isTableLoading}
             onRowClick={handleRowClick}
             emptyStateTitle="Nenhum veículo encontrado"
             emptyStateDescription="Tente ajustar os filtros ou cadastrar um novo veículo."

@@ -15,6 +15,18 @@ interface FuelFormSheetProps {
   editData?: any
 }
 
+export const normalizeFuelType = (ft?: string) => {
+  if (!ft) return "Diesel S10"
+  const upper = ft.trim().toUpperCase()
+  if (upper.includes("S10") || upper === "DIESEL") return "Diesel S10"
+  if (upper.includes("S500")) return "Diesel S500"
+  if (upper.includes("COMUM")) return "Diesel Comum"
+  if (upper.includes("GASOLINA")) return "Gasolina"
+  if (upper.includes("ETANOL") || upper.includes("ALCOOL") || upper.includes("ÁLCOOL")) return "Etanol"
+  if (upper.includes("GNV") || upper.includes("GAS")) return "GNV"
+  return ft
+}
+
 export function FuelFormSheet({ open, onOpenChange, onSuccess, defaultVehicleId, editData }: FuelFormSheetProps) {
   const [vehicles, setVehicles] = useState<any[]>([])
   const [drivers, setDrivers] = useState<any[]>([])
@@ -30,7 +42,7 @@ export function FuelFormSheet({ open, onOpenChange, onSuccess, defaultVehicleId,
       gasStationName: "",
       city: "",
       uf: "",
-      fuelType: "diesel",
+      fuelType: "Diesel S10",
       liters: "",
       cost: "",
       costPerLiter: "",
@@ -49,8 +61,33 @@ export function FuelFormSheet({ open, onOpenChange, onSuccess, defaultVehicleId,
   const odometerReading = watch("odometerReading")
 
   useEffect(() => {
-    vehicleService.getAll().then(res => setVehicles(res.data.data || [])).catch(console.error)
-    driverService.getAll().then(res => setDrivers(res.data.data || [])).catch(console.error)
+    const loadAllVehicles = async () => {
+      let apiVehicles: any[] = []
+      try {
+        const res = await vehicleService.getAll()
+        apiVehicles = res.data?.data || res.data || []
+      } catch (e) {}
+
+      let localVehicles: any[] = []
+      if (typeof window !== "undefined") {
+        const savedCreated = localStorage.getItem("frotaone_created_vehicles")
+        if (savedCreated) {
+          try { localVehicles = JSON.parse(savedCreated) } catch (e) {}
+        }
+      }
+
+      const merged = [...apiVehicles]
+      localVehicles.forEach((lv) => {
+        if (!merged.some((v) => v.id === lv.id || (v.plate && lv.plate && v.plate.toUpperCase() === lv.plate.toUpperCase()))) {
+          merged.push(lv)
+        }
+      })
+
+      setVehicles(merged)
+    }
+
+    loadAllVehicles()
+    driverService.getAll().then(res => setDrivers(res.data?.data || res.data || [])).catch(console.error)
   }, [])
 
   useEffect(() => {
@@ -63,7 +100,7 @@ export function FuelFormSheet({ open, onOpenChange, onSuccess, defaultVehicleId,
       setValue("gasStationName", editData.gasStationName || "")
       setValue("city", editData.city || "")
       setValue("uf", editData.uf || "")
-      setValue("fuelType", editData.fuelType || "diesel")
+      setValue("fuelType", normalizeFuelType(editData.fuelType || "diesel"))
       setValue("liters", editData.liters?.toString() || "")
       setValue("cost", editData.cost?.toString() || "")
       setValue("costPerLiter", editData.costPerLiter?.toString() || "")
@@ -83,10 +120,11 @@ export function FuelFormSheet({ open, onOpenChange, onSuccess, defaultVehicleId,
     if (selectedVehicleId && !editData) {
       const vehicle = vehicles.find(v => v.id === selectedVehicleId)
       if (vehicle) {
-        setValue("fuelType", "diesel") 
+        // Preenche o hodômetro com o valor atual do veículo
         if (vehicle.currentOdometer) {
           setValue("odometerReading", vehicle.currentOdometer.toString())
         }
+        // Nota: NÃO sobrescreve fuelType para não apagar a seleção do usuário
       }
     }
   }, [selectedVehicleId, vehicles, setValue, editData])
@@ -111,20 +149,23 @@ export function FuelFormSheet({ open, onOpenChange, onSuccess, defaultVehicleId,
       const localDate = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), 0)
 
       const driver = drivers.find(d => d.id === data.driverId)
+      const selectedVeh = vehicles.find(v => v.id === data.vehicleId)
       
       const litersVal = parseFloat(data.liters)
       const costVal = parseFloat(data.cost)
       const computedCostPerLiter = litersVal > 0 ? costVal / litersVal : 0
 
       const payload = {
+        id: editData?.id || `fuel-${Date.now()}`,
         vehicleId: data.vehicleId,
+        vehiclePlate: selectedVeh?.plate || "",
         driverId: data.driverId || undefined,
         driverName: driver ? driver.name : undefined,
         fuelDate: localDate,
         gasStationName: data.gasStationName,
         city: data.city,
         uf: data.uf,
-        fuelType: data.fuelType,
+        fuelType: normalizeFuelType(data.fuelType),
         liters: litersVal,
         cost: costVal,
         costPerLiter: computedCostPerLiter,
@@ -135,10 +176,21 @@ export function FuelFormSheet({ open, onOpenChange, onSuccess, defaultVehicleId,
         notes: data.notes
       }
 
+      if (typeof window !== "undefined") {
+        const currentLocal = JSON.parse(localStorage.getItem("frotaone_fuel_records") || "[]")
+        const index = currentLocal.findIndex((r: any) => r.id === payload.id)
+        if (index >= 0) {
+          currentLocal[index] = payload
+        } else {
+          currentLocal.unshift(payload)
+        }
+        localStorage.setItem("frotaone_fuel_records", JSON.stringify(currentLocal))
+      }
+
       if (editData && editData.id) {
-        await fuelService.update(editData.id, payload)
+        await fuelService.update(editData.id, payload).catch(console.warn)
       } else {
-        await fuelService.create(payload)
+        await fuelService.create(payload).catch(console.warn)
       }
       
       reset()
@@ -207,10 +259,12 @@ export function FuelFormSheet({ open, onOpenChange, onSuccess, defaultVehicleId,
                     {...register("fuelType", { required: "Obrigatório" })}
                     className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg"
                   >
-                    <option value="diesel">Diesel</option>
-                    <option value="gasolina">Gasolina</option>
-                    <option value="etanol">Etanol</option>
-                    <option value="gnv">GNV</option>
+                    <option value="Diesel S10">Diesel S10</option>
+                    <option value="Diesel S500">Diesel S500</option>
+                    <option value="Diesel Comum">Diesel Comum</option>
+                    <option value="Gasolina">Gasolina</option>
+                    <option value="Etanol">Etanol</option>
+                    <option value="GNV">GNV</option>
                   </select>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+import useSWR from "swr"
 import { MainLayout } from "../../components/layout/MainLayout"
 import { MaintenanceForm } from "../../components/maintenance/MaintenanceForm"
 import { EditMaintenanceModal } from "../../components/maintenance/EditMaintenanceModal"
@@ -8,61 +9,54 @@ import { vehicleService, maintenanceService } from "../../services/api"
 import { Search, Edit2 } from "lucide-react"
 
 export default function MaintenancePage() {
-  const [vehicles, setVehicles] = useState<any[]>([])
   const [selectedVehicle, setSelectedVehicle] = useState<string>("")
-  const [maintenanceRecords, setMaintenanceRecords] = useState<any[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
 
-  // All maintenance list states
-  const [allMaintenance, setAllMaintenance] = useState<any[]>([])
-  const [filteredMaintenance, setFilteredMaintenance] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  useEffect(() => {
-    const fetchVehicles = async () => {
-      try {
-        const response = await vehicleService.getAll(true)
-        setVehicles(response.data.data)
-      } catch (error) {
-        console.error("Error fetching vehicles:", error)
-      }
-    }
-
-    fetchVehicles()
-    fetchAllMaintenance()
-  }, [])
-
-  const fetchAllMaintenance = async () => {
+  const fetchVehiclesAndMaintenance = async () => {
     try {
-      const response = await maintenanceService.getAll()
-      setAllMaintenance(response.data.data)
-      setFilteredMaintenance(response.data.data)
-    } catch (error) {
-      console.error("Error fetching all maintenance:", error)
+      const [vRes, mRes] = await Promise.all([
+        vehicleService.getAll(true),
+        maintenanceService.getAll()
+      ])
+      return {
+        vehicles: vRes.data?.data || vRes.data || [],
+        maintenance: mRes.data?.data || mRes.data || []
+      }
+    } catch (e) {
+      console.error(e)
+      return { vehicles: [], maintenance: [] }
     }
   }
 
-  useEffect(() => {
-    if (selectedVehicle) {
-      const fetchMaintenance = async () => {
-        try {
-          const response = await maintenanceService.getByVehicle(selectedVehicle)
-          setMaintenanceRecords(response.data.data)
-        } catch (error) {
-          console.error("Error fetching maintenance:", error)
-        }
-      }
+  const { data: initialData, mutate: mutateAll } = useSWR('maintenance_dashboard_initial', fetchVehiclesAndMaintenance)
+  
+  const vehicles = initialData?.vehicles || []
+  const allMaintenance = initialData?.maintenance || []
 
-      fetchMaintenance()
+  const fetchSelectedVehicleMaintenance = async () => {
+    if (!selectedVehicle) return []
+    try {
+      const res = await maintenanceService.getByVehicle(selectedVehicle)
+      return res.data?.data || res.data || []
+    } catch (e) {
+      console.error(e)
+      return []
     }
-  }, [selectedVehicle])
+  }
 
-  useEffect(() => {
-    // Filter maintenance based on search term
-    const filtered = allMaintenance.filter((record) => {
+  const { data: selectedRecordsData, mutate: mutateSelected } = useSWR(
+    selectedVehicle ? `maintenance_vehicle_${selectedVehicle}` : null,
+    fetchSelectedVehicleMaintenance
+  )
+  const maintenanceRecords = selectedRecordsData || []
+
+  const filteredMaintenance = useMemo(() => {
+    return allMaintenance.filter((record: any) => {
       const searchLower = searchTerm.toLowerCase()
       return (
         record.plate?.toLowerCase().includes(searchLower) ||
@@ -70,23 +64,17 @@ export default function MaintenancePage() {
         record.establishmentName?.toLowerCase().includes(searchLower)
       )
     })
-    setFilteredMaintenance(filtered)
-    setCurrentPage(1) // Reset to first page when searching
-  }, [searchTerm, allMaintenance])
+  }, [allMaintenance, searchTerm])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm])
 
   const handleSuccess = () => {
     setShowForm(false)
-    fetchAllMaintenance() // Refresh all maintenance list
+    mutateAll()
     if (selectedVehicle) {
-      const fetchMaintenance = async () => {
-        try {
-          const response = await maintenanceService.getByVehicle(selectedVehicle)
-          setMaintenanceRecords(response.data.data)
-        } catch (error) {
-          console.error("Error fetching maintenance:", error)
-        }
-      }
-      fetchMaintenance()
+      mutateSelected()
     }
   }
 
@@ -325,17 +313,9 @@ export default function MaintenancePage() {
             onClose={() => setEditingId(null)}
             onSuccess={() => {
               setEditingId(null)
-              fetchAllMaintenance()
+              mutateAll()
               if (selectedVehicle) {
-                const fetchMaintenance = async () => {
-                  try {
-                    const response = await maintenanceService.getByVehicle(selectedVehicle)
-                    setMaintenanceRecords(response.data.data)
-                  } catch (error) {
-                    console.error("Error fetching maintenance:", error)
-                  }
-                }
-                fetchMaintenance()
+                mutateSelected()
               }
             }}
           />

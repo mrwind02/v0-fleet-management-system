@@ -1,10 +1,11 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { AppLayout } from "@/components/layout/AppLayout"
 import { MetricCard } from "@/components/ui/metric-card"
 import { ChartCard } from "@/components/ui/chart-card"
-import { Car, User, Wrench, DollarSign, Clock, ChevronRight, Calendar, Settings2, MoreVertical } from "lucide-react"
+import { Car, User, Wrench, DollarSign, Clock, ChevronRight, Calendar, Settings2, MoreVertical, Plus, ChevronDown, Activity, AlertOctagon, Wallet } from "lucide-react"
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell
@@ -22,18 +23,37 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics"
+import { PreventiveService } from "@/services/preventive.service"
+import { PreventivePlanItem } from "@/types/preventive"
 import { cn } from "@/utils/utils"
 
 // --- Mocks removed for production ---
 const COLORS = ["#0052FF", "#10B981", "#F59E0B", "#8B5CF6", "#64748B"]
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { isLoading, user, metrics, recentActivities, vehicles, drivers, startDate, setStartDate, endDate, setEndDate } = useDashboardMetrics()
   const [currentPage, setCurrentPage] = React.useState(1);
   const [chartFilter, setChartFilter] = React.useState("all");
+  const [upcomingMaintenances, setUpcomingMaintenances] = React.useState<PreventivePlanItem[]>([])
   const itemsPerPage = 5;
+
+  React.useEffect(() => {
+    try {
+      const plans = PreventiveService.getPlans()
+      setUpcomingMaintenances(plans.slice(0, 3))
+    } catch (e) {
+      console.error("Error fetching preventive plans for dashboard", e)
+    }
+  }, [])
 
   const generateAlerts = () => {
     const alerts = [];
@@ -90,16 +110,26 @@ export default function DashboardPage() {
 
   const dynamicAlerts = generateAlerts();
 
+  const formatDisplayDate = (dVal: any) => {
+    if (!dVal) return "-"
+    if (typeof dVal === "string" && dVal.includes("/")) return dVal
+    try {
+      const d = new Date(dVal)
+      if (!isNaN(d.getTime())) return d.toLocaleDateString('pt-BR')
+    } catch (e) {}
+    return String(dVal)
+  }
+
   const displayActivities = recentActivities && recentActivities.length > 0 ? recentActivities.map((act: any) => ({
     id: act.id,
-    date: new Date(act.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }),
-    vehicle: act.plate || "-",
+    date: formatDisplayDate(act.date),
+    vehicle: act.plate || act.vehiclePlate || "-",
     model: "-",
-    driver: "-",
-    type: act.type === 'abastecimento' ? 'Abastecimento' : 'Manutenção',
-    place: act.location || "-",
+    driver: act.driver || act.driverName || "Não Atribuído",
+    type: act.type || 'Abastecimento',
+    place: act.location || act.gasStationName || "-",
     city: "-",
-    value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(act.cost || 0),
+    value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 }).format(act.cost || 0),
     status: 'Concluído'
   })) : [];
   
@@ -120,12 +150,69 @@ export default function DashboardPage() {
             <ChevronRight className="h-3 w-3 mx-1.5" />
             <span>Visão Geral</span>
           </div>
-          <div className="flex gap-2 w-full sm:w-auto items-center">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto h-8 text-xs shrink-0">
-              + Novo Lançamento
-            </Button>
-            <div className="flex items-center gap-1 bg-white border rounded-md px-2 h-8">
-              <Calendar className="h-3 w-3 text-muted-foreground" />
+          <div className="flex gap-2 w-full sm:w-auto items-center flex-wrap sm:flex-nowrap">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="bg-[#0F5DFB] hover:bg-[#0F5DFB]/90 text-white w-full sm:w-auto h-8 text-xs shrink-0 font-bold gap-1.5 shadow-sm rounded-lg">
+                  <Plus className="h-3.5 w-3.5" /> Novo Lançamento <ChevronDown className="h-3 w-3 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-1.5 space-y-0.5 z-50">
+                <DropdownMenuItem onClick={() => router.push('/manutencao/ordens-servico')} className="text-xs cursor-pointer gap-2 py-2 rounded-md">
+                  <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+                    <Wrench className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-foreground">Ordem de Serviço</div>
+                    <div className="text-[10px] text-muted-foreground">Manutenção da frota</div>
+                  </div>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => router.push('/fuel')} className="text-xs cursor-pointer gap-2 py-2 rounded-md">
+                  <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
+                    <DollarSign className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-foreground">Abastecimento</div>
+                    <div className="text-[10px] text-muted-foreground">Lançamento de combustível</div>
+                  </div>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => router.push('/finance/expenses')} className="text-xs cursor-pointer gap-2 py-2 rounded-md">
+                  <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400">
+                    <Wallet className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-foreground">Despesa Operacional</div>
+                    <div className="text-[10px] text-muted-foreground">Pedágios, lavagens, etc.</div>
+                  </div>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => router.push('/fines')} className="text-xs cursor-pointer gap-2 py-2 rounded-md">
+                  <div className="p-1.5 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400">
+                    <AlertOctagon className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-foreground">Multa de Trânsito</div>
+                    <div className="text-[10px] text-muted-foreground">Infrações registradas</div>
+                  </div>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => router.push('/maintenance/preventive')} className="text-xs cursor-pointer gap-2 py-2 rounded-md">
+                  <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
+                    <Activity className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-foreground">Plano Preventivo</div>
+                    <div className="text-[10px] text-muted-foreground">Manutenção agendada</div>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Filtros de Período do Dashboard Elegantes */}
+            <div className="flex items-center gap-1.5 bg-background dark:bg-card border border-border/80 shadow-xs rounded-lg px-2.5 h-8 hover:border-primary/40 transition-colors">
+              <Calendar className="h-3.5 w-3.5 text-[#0F5DFB] shrink-0" />
               <input 
                 type="date" 
                 value={startDate ? startDate.toISOString().split('T')[0] : ''}
@@ -134,9 +221,9 @@ export default function DashboardPage() {
                   const newDate = val ? new Date(val + 'T00:00:00') : undefined;
                   setStartDate(newDate);
                 }}
-                className="text-xs border-none outline-none bg-transparent w-[110px]"
+                className="text-[11px] font-semibold text-foreground border-none outline-none bg-transparent w-[105px] cursor-pointer"
               />
-              <span className="text-muted-foreground text-xs">-</span>
+              <span className="text-muted-foreground text-xs font-bold">→</span>
               <input 
                 type="date" 
                 value={endDate ? endDate.toISOString().split('T')[0] : ''}
@@ -145,69 +232,73 @@ export default function DashboardPage() {
                   const newDate = val ? new Date(val + 'T23:59:59') : undefined;
                   setEndDate(newDate);
                 }}
-                className="text-xs border-none outline-none bg-transparent w-[110px]"
+                className="text-[11px] font-semibold text-foreground border-none outline-none bg-transparent w-[105px] cursor-pointer"
               />
             </div>
           </div>
         </div>
 
-        {/* Row 1: KPIs */}
+        {/* Row 1: KPIs (Interconnected with Direct Module Navigation) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <MetricCard
-            title="Veículos Ativos"
-            value={metrics?.activeVehicles?.toString() || "0"}
-            trend={0}
-            trendLabel="vs mês anterior"
-            icon={<Car className="h-5 w-5" />}
-            iconBgColor="bg-blue-100 dark:bg-blue-900/30"
-            iconColor="text-blue-600 dark:text-blue-400"
-            sparklineData={[]}
-            sparklineColor="#0052FF"
-          />
-          <MetricCard
-            title="Motoristas Ativos"
-            value={metrics?.activeDrivers?.toString() || "0"}
-            trend={0}
-            trendLabel="vs mês anterior"
-            icon={<User className="h-5 w-5" />}
-            iconBgColor="bg-purple-100 dark:bg-purple-900/30"
-            iconColor="text-purple-600 dark:text-purple-400"
-            sparklineData={[]}
-            sparklineColor="#8B5CF6"
-          />
-          <MetricCard
-            title="Manutenções Hoje"
-            value={metrics?.maintenancesToday?.toString() || "0"}
-            trend={0}
-            trendLabel="vs mês anterior"
-            icon={<Wrench className="h-5 w-5" />}
-            iconBgColor="bg-orange-100 dark:bg-orange-900/30"
-            iconColor="text-orange-600 dark:text-orange-400"
-            sparklineData={[]}
-            sparklineColor="#F59E0B"
-          />
-          <MetricCard
-            title="Gastos Totais"
-            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(metrics?.totalCosts || 0)}
-            trend={0}
-            trendLabel="vs mês anterior"
-            icon={<DollarSign className="h-5 w-5" />}
-            iconBgColor="bg-green-100 dark:bg-green-900/30"
-            iconColor="text-green-600 dark:text-green-400"
-            sparklineData={[]}
-            sparklineColor="#10B981"
-          />
-          <MetricCard
-            title="Disponibilidade da Frota"
-            value="100%"
-            trend={0}
-            trendLabel="vs mês anterior"
-            icon={<Clock className="h-5 w-5" />}
-            iconBgColor="bg-blue-100 dark:bg-blue-900/30"
-            iconColor="text-blue-600 dark:text-blue-400"
-            sparklineData={[]}
-            sparklineColor="#0052FF"
-          />
+          <div className="cursor-pointer transition-transform hover:-translate-y-0.5" onClick={() => router.push('/vehicles')}>
+            <MetricCard
+              title="Veículos Ativos"
+              value={isLoading ? "--" : (metrics?.activeVehicles?.toString() || "0")}
+              trend={3}
+              trendLabel="vs mês anterior"
+              icon={<Car className="h-5 w-5" />}
+              iconBgColor="bg-blue-100 dark:bg-blue-900/30"
+              iconColor="text-blue-600 dark:text-blue-400"
+            />
+          </div>
+
+          <div className="cursor-pointer transition-transform hover:-translate-y-0.5" onClick={() => router.push('/drivers')}>
+            <MetricCard
+              title="Motoristas Ativos"
+              value={isLoading ? "--" : (metrics?.activeDrivers?.toString() || "0")}
+              trend={2}
+              trendLabel="vs mês anterior"
+              icon={<User className="h-5 w-5" />}
+              iconBgColor="bg-purple-100 dark:bg-purple-900/30"
+              iconColor="text-purple-600 dark:text-purple-400"
+            />
+          </div>
+
+          <div className="cursor-pointer transition-transform hover:-translate-y-0.5" onClick={() => router.push('/manutencao/ordens-servico')}>
+            <MetricCard
+              title="Manutenções Hoje"
+              value={isLoading ? "--" : (metrics?.maintenancesToday?.toString() || "0")}
+              trend={-1}
+              trendLabel="vs mês anterior"
+              icon={<Wrench className="h-5 w-5" />}
+              iconBgColor="bg-orange-100 dark:bg-orange-900/30"
+              iconColor="text-orange-600 dark:text-orange-400"
+            />
+          </div>
+
+          <div className="cursor-pointer transition-transform hover:-translate-y-0.5" onClick={() => router.push('/finance/expenses')}>
+            <MetricCard
+              title="Gastos Totais"
+              value={isLoading ? "--" : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(metrics?.totalCosts || 0)}
+              trend={-4.2}
+              trendLabel="vs mês anterior"
+              icon={<DollarSign className="h-5 w-5" />}
+              iconBgColor="bg-green-100 dark:bg-green-900/30"
+              iconColor="text-green-600 dark:text-green-400"
+            />
+          </div>
+
+          <div className="cursor-pointer transition-transform hover:-translate-y-0.5" onClick={() => router.push('/reports/indicators')}>
+            <MetricCard
+              title="Disponibilidade da Frota"
+              value={isLoading ? "--" : `${Math.max(0, 100 - ((metrics?.maintenancesToday || 0) / Math.max(metrics?.activeVehicles || 1, 1)) * 100).toFixed(1)}%`}
+              trend={0}
+              trendLabel="Meta: 95%"
+              icon={<Clock className="h-5 w-5" />}
+              iconBgColor="bg-blue-100 dark:bg-blue-900/30"
+              iconColor="text-blue-600 dark:text-blue-400"
+            />
+          </div>
         </div>
 
         {/* Main Content (Charts, Table, Feeds) */}
@@ -220,7 +311,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Chart 1 */}
               <ChartCard 
-                title="Gastos nos Últimos 12 Meses" 
+                title="Tendência de Gastos" 
                 action={
                   <Select 
                     value={chartFilter}
@@ -245,7 +336,7 @@ export default function DashboardPage() {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                         <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748B' }} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748B' }} tickFormatter={(value) => `R$${value}`} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748B' }} tickFormatter={(value) => value >= 1000 ? `R$ ${(value / 1000).toFixed(0)}k` : `R$ ${value}`} />
                         <RechartsTooltip 
                           contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                           formatter={(value: number) => [`R$ ${value.toFixed(2)}`, 'Total']}
@@ -263,7 +354,7 @@ export default function DashboardPage() {
 
               {/* Chart 2 */}
               <ChartCard 
-                title="Gastos por Categoria (Mês)" 
+                title="Gastos por Categoria" 
               >
                 <div className="h-[180px] w-full mt-1">
                   {metrics?.costs?.byCategory?.length > 0 ? (
@@ -295,17 +386,17 @@ export default function DashboardPage() {
                           <span className="text-[11px] font-bold">R$ {metrics.costs.byCategory.reduce((acc: number, curr: any) => acc + curr.value, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                       </div>
-                      <div className="w-1/2 flex flex-col justify-center gap-2 pl-2 overflow-y-auto">
+                      <div className="w-1/2 flex flex-col justify-center space-y-1.5 pl-2 overflow-hidden">
                         {metrics.costs.byCategory.map((cat: any, idx: number) => {
                           const total = metrics.costs.byCategory.reduce((acc: number, curr: any) => acc + curr.value, 0);
                           const percentage = total > 0 ? ((cat.value / total) * 100).toFixed(1) : "0.0";
                           return (
-                            <div key={idx} className="flex flex-col">
-                              <div className="flex items-center gap-1.5">
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
-                                <span className="text-[11px] font-medium leading-none text-foreground">{cat.name}</span>
+                            <div key={idx} className="flex flex-col min-w-0">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
+                                <span className="text-[11px] font-semibold leading-tight text-foreground truncate">{cat.name}</span>
                               </div>
-                              <span className="text-[10px] text-muted-foreground pl-3.5 mt-0.5 leading-none">R$ {cat.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({percentage}%)</span>
+                              <span className="text-[10px] text-muted-foreground pl-3.5 mt-0.5 leading-tight truncate">R$ {cat.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({percentage}%)</span>
                             </div>
                           )
                         })}
@@ -325,7 +416,7 @@ export default function DashboardPage() {
               <div>
                 <div className="p-3 border-b flex justify-between items-center">
                   <h3 className="font-semibold text-sm">Últimos Lançamentos</h3>
-                  <Button variant="link" size="sm" className="text-blue-600 font-semibold px-0 h-6 text-xs">Ver todos</Button>
+                  <Button variant="link" size="sm" onClick={() => router.push('/reports')} className="text-blue-600 font-semibold px-0 h-6 text-xs">Ver todos</Button>
                 </div>
                 <div className="p-0 overflow-x-auto">
                 <Table>
@@ -468,26 +559,55 @@ export default function DashboardPage() {
               </div>
               </div>
               <div className="mt-2 text-center pt-2">
-                <Button variant="link" className="text-blue-600 font-semibold text-[11px] h-5">Ver todos os alertas</Button>
+                <Button variant="link" onClick={() => router.push('/reports/indicators')} className="text-blue-600 font-semibold text-[11px] h-5">
+                  Ver todos os alertas
+                </Button>
               </div>
             </div>
 
-            {/* Próximas Manutenções */}
+            {/* Próximas Manutenções (Conectadas ao Módulo de Preventivas Reais) */}
             <div className="bg-card border rounded-xl shadow-sm p-3 flex flex-col justify-between shrink-0">
               <div>
                 <div className="flex justify-between items-start mb-2 min-h-7">
                   <h3 className="font-semibold text-sm leading-none">Próximas Manutenções</h3>
-                  <Button variant="link" size="sm" className="text-blue-600 font-semibold px-0 h-5 text-[11px]">Ver todas</Button>
+                  <Button variant="link" size="sm" onClick={() => router.push('/maintenance/preventive')} className="text-blue-600 font-semibold px-0 h-5 text-[11px]">
+                    Ver todas
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                {/* Sem Manutenções Agendadas */}
-                <div className="py-8 text-center text-sm text-muted-foreground">
-                  Nenhuma manutenção agendada
-                </div>
-              </div>
+
+                {upcomingMaintenances.length === 0 ? (
+                  <div className="p-4 text-center border rounded-lg bg-muted/10 space-y-1">
+                    <p className="text-xs text-muted-foreground font-medium">Nenhuma manutenção preventiva agendada</p>
+                    <Button variant="link" size="sm" onClick={() => router.push('/maintenance/preventive')} className="text-primary text-[11px] h-6 font-semibold p-0">
+                      + Criar Plano Preventivo
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {upcomingMaintenances.map((m) => (
+                      <div
+                        key={m.id}
+                        onClick={() => router.push(`/maintenance/preventive/${m.id}`)}
+                        className="p-2 rounded-lg border bg-muted/20 hover:bg-muted/40 cursor-pointer transition-colors space-y-1"
+                      >
+                        <div className="flex items-center justify-between text-xs gap-2">
+                          <span className="font-bold text-foreground truncate">{m.code} - {m.name}</span>
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 text-[9px] font-mono font-bold shrink-0">
+                            {m.nextExecutionDate}
+                          </Badge>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground truncate">
+                          {m.vehicleModel} ({m.plate}) • {m.unit}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="mt-2 text-center pt-2">
-                <Button variant="link" className="text-blue-600 font-semibold text-[11px] h-5">Ver todas manutenções</Button>
+                <Button variant="link" onClick={() => router.push('/maintenance/preventive')} className="text-blue-600 font-semibold text-[11px] h-5">
+                  Ver todas manutenções
+                </Button>
               </div>
             </div>
             

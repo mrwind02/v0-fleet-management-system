@@ -27,6 +27,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { FrotaOneIconMark, FrotaOneLogo } from "@/components/ui/FrotaOneLogo"
 
 type NavItem = {
   title: string
@@ -46,7 +47,7 @@ const navigation: (NavItem | NavModule)[] = [
     icon: LayoutDashboard,
   },
   {
-    module: "FROTA",
+    module: "Frota",
     items: [
       { title: "Veículos", href: "/vehicles", icon: Truck },
       { title: "Motoristas", href: "/drivers", icon: Users },
@@ -55,33 +56,33 @@ const navigation: (NavItem | NavModule)[] = [
     ],
   },
   {
-    module: "MANUTENÇÃO",
+    module: "Manutenção",
     items: [
-      { title: "Ordens de Serviço", href: "/manutencao/ordens-servico", icon: Wrench },
+      { title: "Ordens de Serviço", href: "/maintenance/os", icon: Wrench },
       { title: "Preventivas", href: "/maintenance/preventive", icon: Activity },
       { title: "Checklists", href: "/maintenance/checklist", icon: ClipboardCheck },
     ],
   },
   {
-    module: "FINANCEIRO",
+    module: "Financeiro",
     items: [
       { title: "Abastecimentos", href: "/fuel", icon: DollarSign },
-      { title: "Despesas", href: "/finance/expenses", icon: Wallet },
-      { title: "Fornecedores", href: "/finance/suppliers", icon: Store },
+      { title: "Despesas", href: "/financeiro/despesas", icon: Wallet },
+      { title: "Fornecedores", href: "/cadastros/fornecedores", icon: Store },
     ],
   },
   {
-    module: "RELATÓRIOS",
+    module: "Relatórios",
     items: [
       { title: "Relatórios", href: "/reports", icon: FileText },
       { title: "Indicadores", href: "/reports/indicators", icon: Activity },
     ],
   },
   {
-    module: "CONFIGURAÇÕES",
+    module: "Configurações",
     items: [
-      { title: "Usuários", href: "/settings/users", icon: UserCog },
-      { title: "Configurações", href: "/settings/general", icon: Settings },
+      { title: "Central de Configurações", href: "/settings", icon: Settings },
+      { title: "Usuários & Permissões", href: "/settings/users", icon: UserCog },
     ],
   },
 ]
@@ -102,50 +103,45 @@ export function Sidebar({ isCollapsed, setIsCollapsed, className }: SidebarProps
         className
       )}
     >
-      {/* Top Header - Logo */}
-      <div className="flex h-16 items-center justify-center px-4 shrink-0 border-b border-white/10">
-        <div className="flex items-center gap-3 w-full">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0F5DFB] text-white shadow-sm">
-            <Truck className="h-5 w-5" />
-          </div>
-          {!isCollapsed && (
-            <div className="flex flex-col items-start overflow-hidden text-left">
-              <span className="text-lg font-bold text-white tracking-tight leading-none mb-1">FrotaOne</span>
-              <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase leading-none">Gestão de Frotas</span>
-            </div>
-          )}
-        </div>
+      {/* Top Header - Official FrotaOne Logo */}
+      <div className="flex h-14 items-center justify-center px-3 shrink-0 border-b border-white/10">
+        {isCollapsed ? (
+          <FrotaOneIconMark className="w-7 h-7" variant="dark" />
+        ) : (
+          <FrotaOneLogo variant="dark" size="sm" showTagline={true} />
+        )}
       </div>
 
-      {/* Navigation */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 flex flex-col gap-0.5 custom-scrollbar">
+      {/* Navigation - Responsive & No Visible Scrollbar */}
+      <div className="flex-1 overflow-y-auto no-scrollbar py-2 px-2.5 space-y-2 select-none">
         {navigation.map((nav, index) => {
           if ("module" in nav) {
             return (
-              <div key={nav.module} className="mb-1">
+              <div key={`module-${index}`} className="space-y-0.5">
                 {!isCollapsed && (
-                  <h4 className="px-3 text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 mt-3">
+                  <h3 className="px-2.5 text-[9.5px] font-bold text-slate-400/80 uppercase tracking-wider mb-0.5">
                     {nav.module}
-                  </h4>
+                  </h3>
                 )}
-                {isCollapsed && <div className="h-3" />} {/* Spacer when collapsed */}
+                {isCollapsed && <div className="h-1.5" />} {/* Spacer when collapsed */}
                 <div className="flex flex-col space-y-0.5">
                   {nav.items.map((item) => {
                     const isActive = pathname.startsWith(item.href)
                     const Icon = item.icon
+                    const itemKey = `${item.href}-${item.title}`
                     
                     if (isCollapsed) {
                       return (
-                        <Tooltip key={item.href} delayDuration={0}>
+                        <Tooltip key={itemKey} delayDuration={0}>
                           <TooltipTrigger asChild>
                             <Link
                               href={item.href}
                               className={cn(
-                                "flex justify-center items-center h-8 mb-0.5 rounded-lg transition-colors",
+                                "flex justify-center items-center h-7 mb-0.5 rounded-md transition-colors",
                                 isActive ? "bg-[#0F5DFB] text-white shadow-sm" : "text-slate-400 hover:bg-white/10 hover:text-white"
                               )}
                             >
-                              <Icon className="h-4 w-4 shrink-0" />
+                              <Icon className="h-3.5 w-3.5 shrink-0" />
                             </Link>
                           </TooltipTrigger>
                           <TooltipContent side="right">
@@ -157,16 +153,16 @@ export function Sidebar({ isCollapsed, setIsCollapsed, className }: SidebarProps
 
                     return (
                       <Link
-                        key={item.href}
+                        key={itemKey}
                         href={item.href}
                         className={cn(
-                          "flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[11px] transition-colors",
+                          "flex items-center gap-2 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors",
                           isActive 
-                            ? "bg-[#0F5DFB] text-white font-medium shadow-sm" 
+                            ? "bg-[#0F5DFB] text-white font-semibold shadow-sm" 
                             : "text-slate-300 hover:bg-white/10 hover:text-white"
                         )}
                       >
-                        <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-slate-400")} />
+                        <Icon className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-white" : "text-slate-400")} />
                         <span className="truncate">{item.title}</span>
                       </Link>
                     )
@@ -177,7 +173,6 @@ export function Sidebar({ isCollapsed, setIsCollapsed, className }: SidebarProps
           } else {
             // Direct Link (Dashboard)
             const isActive = pathname === nav.href || pathname.startsWith(nav.href)
-            const Icon = nav.icon
             
             if (isCollapsed) {
               return (
@@ -186,11 +181,11 @@ export function Sidebar({ isCollapsed, setIsCollapsed, className }: SidebarProps
                     <Link
                       href={nav.href}
                       className={cn(
-                        "flex justify-center items-center h-8 mb-2 rounded-lg transition-colors",
+                        "flex justify-center items-center h-8 rounded-md transition-colors",
                         isActive ? "bg-[#0F5DFB] text-white shadow-sm" : "text-slate-400 hover:bg-white/10 hover:text-white"
                       )}
                     >
-                      <Icon className="h-4 w-4 shrink-0" />
+                      <LayoutDashboard className="h-3.5 w-3.5 shrink-0" />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right">
@@ -205,18 +200,37 @@ export function Sidebar({ isCollapsed, setIsCollapsed, className }: SidebarProps
                 key={nav.href}
                 href={nav.href}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[11px] transition-colors mb-2",
+                  "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors",
                   isActive 
-                    ? "bg-[#0F5DFB] text-white font-medium shadow-sm" 
+                    ? "bg-[#0F5DFB] text-white shadow-sm" 
                     : "text-slate-300 hover:bg-white/10 hover:text-white"
                 )}
               >
-                <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-white" : "text-slate-400")} />
-                <span className="truncate">{nav.title}</span>
+                <LayoutDashboard className="h-3.5 w-3.5 shrink-0" />
+                <span>{nav.title}</span>
               </Link>
             )
           }
         })}
+      </div>
+
+      {/* Collapse Toggle Button */}
+      <div className="p-2 border-t border-white/10 shrink-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-white hover:bg-white/10 h-7 text-[11px] font-medium"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-3.5 w-3.5" />
+          ) : (
+            <>
+              <ChevronLeft className="h-3.5 w-3.5" />
+              <span>Recolher Menu</span>
+            </>
+          )}
+        </Button>
       </div>
     </div>
   )
