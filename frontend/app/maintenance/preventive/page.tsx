@@ -64,6 +64,7 @@ import { PreventivePlanItem, PreventiveFilterState } from "@/types/preventive"
 import { PreventiveService } from "@/services/preventive.service"
 import { PreventiveCalendar } from "@/components/preventive/preventive-calendar"
 import { NewPlanSheet } from "@/components/preventive/new-plan-sheet"
+import { ConfirmModal } from "@/components/ui/confirm-modal"
 
 export default function PreventiveMaintenancePage() {
   const router = useRouter()
@@ -121,12 +122,22 @@ export default function PreventiveMaintenancePage() {
     setIsSheetOpen(false)
   }
 
+  const [deleteConfirmConfig, setDeleteConfirmConfig] = React.useState<{
+    isOpen: boolean
+    plan: PreventivePlanItem | null
+  }>({ isOpen: false, plan: null })
+
   const handleDeletePlan = (plan: PreventivePlanItem, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (confirm(`Tem certeza que deseja excluir o plano preventivo "${plan.code} - ${plan.name}"?`)) {
-      PreventiveService.deletePlan(plan.id)
+    setDeleteConfirmConfig({ isOpen: true, plan })
+  }
+
+  const handleConfirmDeletePlan = () => {
+    if (deleteConfirmConfig.plan) {
+      PreventiveService.deletePlan(deleteConfirmConfig.plan.id)
       loadData()
-      showNotice(`Plano preventivo "${plan.code}" removido.`)
+      showNotice(`Plano preventivo "${deleteConfirmConfig.plan.code}" removido com sucesso.`)
+      setDeleteConfirmConfig({ isOpen: false, plan: null })
     }
   }
 
@@ -512,6 +523,18 @@ export default function PreventiveMaintenancePage() {
         }}
         editData={editingPlan}
         onSubmit={handleCreatePlanSubmit}
+      />
+
+      {/* CONFIRMATION DIALOG FOR DELETION */}
+      <ConfirmModal
+        isOpen={deleteConfirmConfig.isOpen}
+        onClose={() => setDeleteConfirmConfig({ isOpen: false, plan: null })}
+        onConfirm={handleConfirmDeletePlan}
+        title={`Excluir Plano Preventivo ${deleteConfirmConfig.plan?.code || ""}?`}
+        description={`Tem certeza que deseja excluir o plano preventivo "${deleteConfirmConfig.plan?.code || ""} - ${deleteConfirmConfig.plan?.name || ""}"? Esta ação removerá a automação de ordens de serviço deste plano.`}
+        confirmText="Excluir Plano Preventivo"
+        cancelText="Cancelar"
+        variant="danger"
       />
     </AppLayout>
   )

@@ -136,10 +136,61 @@ export const INITIAL_CHECKLIST_MODELS: ChecklistModelTemplate[] = [
   { id: "mod-4", name: "Checklist Pós-Viagem & Devolução", category: "Operacional", applicationTarget: "Toda a Frota", itemsCount: 20, active: true, isRequired: true }
 ]
 
+const CHECKLIST_STORAGE_KEY = "frotaone_checklist_executions"
+const CHECKLIST_MODELS_STORAGE_KEY = "frotaone_checklist_models"
+
+function getStoredExecutions(): ChecklistExecutionItem[] {
+  if (typeof window === "undefined") return INITIAL_CHECKLIST_EXECUTIONS
+  try {
+    const data = localStorage.getItem(CHECKLIST_STORAGE_KEY)
+    if (data !== null) {
+      const parsed = JSON.parse(data)
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch (e) {
+    console.warn("Failed to read checklist executions from storage", e)
+  }
+  saveStoredExecutions(INITIAL_CHECKLIST_EXECUTIONS)
+  return INITIAL_CHECKLIST_EXECUTIONS
+}
+
+function saveStoredExecutions(items: ChecklistExecutionItem[]) {
+  if (typeof window === "undefined") return
+  try {
+    localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify(items))
+  } catch (e) {
+    console.warn("Failed to save checklist executions to storage", e)
+  }
+}
+
+function getStoredModels(): ChecklistModelTemplate[] {
+  if (typeof window === "undefined") return INITIAL_CHECKLIST_MODELS
+  try {
+    const data = localStorage.getItem(CHECKLIST_MODELS_STORAGE_KEY)
+    if (data !== null) {
+      const parsed = JSON.parse(data)
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch (e) {
+    console.warn("Failed to read checklist models from storage", e)
+  }
+  saveStoredModels(INITIAL_CHECKLIST_MODELS)
+  return INITIAL_CHECKLIST_MODELS
+}
+
+function saveStoredModels(items: ChecklistModelTemplate[]) {
+  if (typeof window === "undefined") return
+  try {
+    localStorage.setItem(CHECKLIST_MODELS_STORAGE_KEY, JSON.stringify(items))
+  } catch (e) {
+    console.warn("Failed to save checklist models to storage", e)
+  }
+}
+
 export class ChecklistService {
   // 1. Get List of Executions
   static getExecutions(filter?: ChecklistFilterState): ChecklistExecutionItem[] {
-    let result = [...INITIAL_CHECKLIST_EXECUTIONS]
+    let result = getStoredExecutions()
     if (!filter) return result
 
     if (filter.search) {
@@ -166,7 +217,66 @@ export class ChecklistService {
 
   // 2. Get Execution Details by ID
   static getExecutionById(id: string): ChecklistExecutionItem | undefined {
-    return INITIAL_CHECKLIST_EXECUTIONS.find((e) => e.id === id || e.code.toLowerCase() === id.toLowerCase())
+    return getStoredExecutions().find((e) => e.id === id || e.code.toLowerCase() === id.toLowerCase())
+  }
+
+  // Save new model
+  static saveModel(formData: Record<string, any>): ChecklistModelTemplate {
+    const models = getStoredModels()
+    const newModel: ChecklistModelTemplate = {
+      id: `mod-${Date.now()}`,
+      name: formData.name || "Novo Modelo de Inspeção",
+      category: formData.category || "Operacional",
+      applicationTarget: formData.applicationTarget || "Toda a Frota",
+      itemsCount: formData.groups ? formData.groups.reduce((acc: number, g: any) => acc + (g.items?.length || 0), 0) : 10,
+      active: formData.isActive !== false,
+      isRequired: formData.isRequired !== false
+    }
+    const updated = [newModel, ...models]
+    saveStoredModels(updated)
+    return newModel
+  }
+
+  // Create new execution
+  static createExecution(data?: Partial<ChecklistExecutionItem>): ChecklistExecutionItem {
+    const executions = getStoredExecutions()
+    const nextCode = `CHK-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+    const todayStr = new Date().toLocaleDateString("pt-BR")
+    const nowTimeStr = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+
+    const newExec: ChecklistExecutionItem = {
+      id: `chk-${Date.now()}`,
+      code: data?.code || nextCode,
+      date: data?.date || todayStr,
+      time: data?.time || nowTimeStr,
+      modelName: data?.modelName || "Inspeção Diária Pré-Viagem (Rodoviário)",
+      vehicleModel: data?.vehicleModel || "Volvo FH 540",
+      plate: data?.plate || "ABC-1234",
+      driverName: data?.driverName || "João Silva",
+      unit: data?.unit || "Matriz SP",
+      result: data?.result || "Aprovado",
+      nonConformitiesCount: data?.nonConformitiesCount || 0,
+      osGenerated: data?.osGenerated || false,
+      durationMinutes: data?.durationMinutes || 12,
+      location: data?.location || "Pátio Operacional",
+      observerNotes: data?.observerNotes || "Vistoria concluída com sucesso.",
+      signatureUrl: "#",
+      gpsCoordinates: "-23.5505, -46.6333",
+      evaluatedCount: 20,
+      compliantCount: 20,
+      nonCompliantCount: 0,
+      photosCount: 1
+    }
+
+    const updated = [newExec, ...executions]
+    saveStoredExecutions(updated)
+    return newExec
+  }
+
+  // Delete execution
+  static deleteExecution(id: string) {
+    const updated = getStoredExecutions().filter(e => e.id !== id && e.code !== id)
+    saveStoredExecutions(updated)
   }
 
   // 3. Get Evaluated Items for Execution

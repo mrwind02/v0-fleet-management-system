@@ -82,9 +82,9 @@ function getStoredPlans(): PreventivePlanItem[] {
   if (typeof window === "undefined") return INITIAL_PREVENTIVE_PLANS
   try {
     const data = localStorage.getItem(PREVENTIVE_STORAGE_KEY)
-    if (data) {
+    if (data !== null) {
       const parsed: PreventivePlanItem[] = JSON.parse(data)
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed.map(p => ({
           ...p,
           vehicleModel: p.vehicleModel ? p.vehicleModel.replace(/\s*\([^)]*\)/g, "").trim() : p.vehicleModel

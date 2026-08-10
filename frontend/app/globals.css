@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
-html {
+html, body {
+  height: 100%;
+  overflow: hidden;
   scroll-behavior: smooth;
-  scroll-snap-type: y proximity;
 }
 
 main > section {

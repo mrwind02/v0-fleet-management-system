@@ -83,9 +83,18 @@ export default function ChecklistPage() {
   const [isBuilderSheetOpen, setIsBuilderSheetOpen] = React.useState(false)
   const [noticeMessage, setNoticeMessage] = React.useState<string | null>(null)
 
-  // Fetch Mock Data
-  const kpis = ChecklistService.getKpis()
-  const executions = ChecklistService.getExecutions(filter)
+  // Dynamic Data State
+  const [executions, setExecutions] = React.useState<ChecklistExecutionItem[]>([])
+  const [kpis, setKpis] = React.useState<any[]>([])
+
+  const loadData = React.useCallback(() => {
+    setExecutions(ChecklistService.getExecutions(filter))
+    setKpis(ChecklistService.getKpis())
+  }, [filter])
+
+  React.useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const showNotice = (msg: string) => {
     setNoticeMessage(msg)
@@ -97,7 +106,16 @@ export default function ChecklistPage() {
   }
 
   const handleCreateModelSubmit = (formData: Record<string, any>) => {
+    ChecklistService.saveModel(formData)
+    loadData()
     showNotice(`Novo modelo de checklist "${formData.name}" salvo com sucesso!`)
+    setIsBuilderSheetOpen(false)
+  }
+
+  const handleCreateExecution = () => {
+    const created = ChecklistService.createExecution()
+    loadData()
+    showNotice(`Nova execução de checklist "${created.code}" iniciada com sucesso!`)
   }
 
   // Dynamic Chart Calculations derived strictly from executions
@@ -256,7 +274,7 @@ export default function ChecklistPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => showNotice("Abrindo fluxo de Nova Execução de Checklist no dispositivo...")}
+              onClick={handleCreateExecution}
               className="text-xs gap-1.5 h-9 shrink-0 whitespace-nowrap"
             >
               <ClipboardCheck className="h-3.5 w-3.5" /> Nova Execução
