@@ -10,22 +10,92 @@ import {
 
 const PREVENTIVE_STORAGE_KEY = "frotaone_preventive_plans"
 
+const INITIAL_PREVENTIVE_PLANS: PreventivePlanItem[] = [
+  {
+    id: "pln-01",
+    code: "PLN-101",
+    name: "Troca de Óleo e Filtros do Motor",
+    category: "Motor & Lubrificação",
+    description: "Plano preventivo periódico de substituição de óleo do motor, filtro de óleo e filtro de combustível.",
+    vehicleModel: "Volvo FH 540",
+    plate: "ABC-1234",
+    unit: "Matriz São Paulo",
+    triggerType: "km",
+    triggerLabel: "A cada 15.000 KM",
+    intervalKm: 15000,
+    intervalDays: 180,
+    toleranceKm: 1000,
+    toleranceDays: 15,
+    nextExecutionKm: 15000,
+    nextExecutionDate: "15/09/2026",
+    lastExecutionDate: "15/03/2026",
+    status: "Ativo",
+    nextOsPrediction: "10/09/2026",
+    autoGenerateOs: true,
+    osPriority: "Alta",
+    defaultWorkshop: "Oficina Matriz",
+    defaultResponsible: "Carlos Mendes",
+    plannedServices: ["Troca de Óleo 15W40", "Troca do Filtro de Óleo", "Troca do Filtro de Combustível"],
+    osGeneratedCount: 3,
+    compliancePercent: 100,
+    createdAt: "15/01/2026",
+    objective: "Evitar o desgaste prematuro de componentes internos do motor.",
+    components: ["Motor", "Filtros"],
+    estimatedHours: 2.5
+  },
+  {
+    id: "pln-02",
+    code: "PLN-102",
+    name: "Revisão e Regulagem do Sistema de Freios",
+    category: "Sistema de Freios",
+    description: "Vistoria técnica de lonas, pastilhas, tambores, válvulas pneumáticas e teste de estanqueidade.",
+    vehicleModel: "Scania R450",
+    plate: "DEF-5678",
+    unit: "Filial Rio de Janeiro",
+    triggerType: "mixed_or",
+    triggerLabel: "A cada 20.000 KM ou 180 Dias",
+    intervalKm: 20000,
+    intervalDays: 180,
+    toleranceKm: 1000,
+    toleranceDays: 15,
+    nextExecutionKm: 20000,
+    nextExecutionDate: "20/10/2026",
+    lastExecutionDate: "20/04/2026",
+    status: "Ativo",
+    nextOsPrediction: "15/10/2026",
+    autoGenerateOs: true,
+    osPriority: "Urgente",
+    defaultWorkshop: "Auto Truck Serviços",
+    defaultResponsible: "Valter Silva",
+    plannedServices: ["Inspeção de Lonas e Tambores", "Verificação de Válvulas Pneumáticas", "Regulagem de Freios"],
+    osGeneratedCount: 2,
+    compliancePercent: 95,
+    createdAt: "20/01/2026",
+    objective: "Garantir a frenagem segura dos veículos pesados em rodovia.",
+    components: ["Sistema de Freios"],
+    estimatedHours: 3.0
+  }
+]
+
 // Retrieve saved plans from LocalStorage / memory
 function getStoredPlans(): PreventivePlanItem[] {
-  if (typeof window === "undefined") return []
+  if (typeof window === "undefined") return INITIAL_PREVENTIVE_PLANS
   try {
     const data = localStorage.getItem(PREVENTIVE_STORAGE_KEY)
     if (data) {
       const parsed: PreventivePlanItem[] = JSON.parse(data)
-      return parsed.map(p => ({
-        ...p,
-        vehicleModel: p.vehicleModel ? p.vehicleModel.replace(/\s*\([^)]*\)/g, "").trim() : p.vehicleModel
-      }))
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map(p => ({
+          ...p,
+          vehicleModel: p.vehicleModel ? p.vehicleModel.replace(/\s*\([^)]*\)/g, "").trim() : p.vehicleModel
+        }))
+      }
     }
   } catch (e) {
     console.warn("Failed to read preventive plans from storage", e)
   }
-  return []
+  saveStoredPlans(INITIAL_PREVENTIVE_PLANS)
+  return INITIAL_PREVENTIVE_PLANS
 }
 
 // Save plans to LocalStorage / memory

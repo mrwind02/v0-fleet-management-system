@@ -118,6 +118,7 @@ export default function PreventiveMaintenancePage() {
     loadData()
     showNotice(formData.id ? `Plano preventivo "${saved.code} - ${saved.name}" atualizado!` : `Novo plano "${saved.code} - ${saved.name}" criado com sucesso!`)
     setEditingPlan(null)
+    setIsSheetOpen(false)
   }
 
   const handleDeletePlan = (plan: PreventivePlanItem, e: React.MouseEvent) => {

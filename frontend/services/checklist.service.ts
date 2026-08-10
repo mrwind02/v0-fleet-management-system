@@ -227,15 +227,37 @@ export class ChecklistService {
     return INITIAL_CHECKLIST_MODELS
   }
 
-  // 9. Get KPIs
+  // 9. Get KPIs dynamically from stored executions
   static getKpis() {
+    const executions = this.getExecutions()
+    const totalExecutions = executions.length
+
+    let totalEvaluated = 0
+    let totalCompliant = 0
+    let totalNonConformities = 0
+    let totalOs = 0
+    let totalDuration = 0
+    const vehicleSet = new Set<string>()
+
+    executions.forEach((e) => {
+      totalEvaluated += e.evaluatedCount || 0
+      totalCompliant += e.compliantCount || 0
+      totalNonConformities += e.nonConformitiesCount || 0
+      if (e.osGenerated) totalOs += 1
+      if (e.plate) vehicleSet.add(e.plate)
+      totalDuration += e.durationMinutes || 0
+    })
+
+    const complianceRate = totalEvaluated > 0 ? (totalCompliant / totalEvaluated) * 100 : 100
+    const avgDuration = totalExecutions > 0 ? Math.round(totalDuration / totalExecutions) : 14
+
     return [
-      { title: "Execuções Hoje", value: "42 Inspeções", trend: 8, trendLabel: "Hoje", tooltip: "Quantidade total de checklists operacionais realizados no dia." },
-      { title: "Índice de Conformidade", value: "94,8%", trend: 1.2, trendLabel: "Meta: 95%", tooltip: "Percentual de itens avaliados aprovados nas inspeções." },
-      { title: "Não Conformidades", value: "18 Reprovações", trend: -4, trendLabel: "Este mês", tooltip: "Itens que apresentaram defeito ou necessidade de manutenção." },
-      { title: "OS Geradas por Checklist", value: "12 OS Criadas", trend: 15, trendLabel: "Automação", tooltip: "Ordens de Serviço abertas automaticamente a partir de reprovações." },
-      { title: "Veículos Inspecionados", value: "38 Veículos", trend: 3, trendLabel: "Da frota", tooltip: "Quantidade de veículos únicos submetidos à vistoria pré-viagem." },
-      { title: "Tempo Médio de Inspeção", value: "14 min", trend: -1, trendLabel: "Eficiência", tooltip: "Duração média gasta pelo motorista para concluir o checklist." }
+      { title: "Execuções Realizadas", value: `${totalExecutions} Inspeções`, trend: totalExecutions > 0 ? 100 : 0, trendLabel: "Ativas", tooltip: "Quantidade total de checklists operacionais realizados." },
+      { title: "Índice de Conformidade", value: `${complianceRate.toFixed(1).replace(".", ",")}%`, trend: complianceRate >= 95 ? 2.5 : -1.5, trendLabel: "Meta: 95%", tooltip: "Percentual de itens avaliados aprovados nas inspeções." },
+      { title: "Não Conformidades", value: `${totalNonConformities} Reprovações`, trend: totalNonConformities > 0 ? -4 : 0, trendLabel: "Identificadas", tooltip: "Itens que apresentaram defeito ou necessidade de manutenção." },
+      { title: "OS Geradas por Checklist", value: `${totalOs} OS Criadas`, trend: totalOs > 0 ? 15 : 0, trendLabel: "Automação", tooltip: "Ordens de Serviço abertas automaticamente a partir de reprovações." },
+      { title: "Veículos Inspecionados", value: `${vehicleSet.size} Veículos`, trend: vehicleSet.size > 0 ? 100 : 0, trendLabel: "Da frota", tooltip: "Quantidade de veículos únicos submetidos à vistoria." },
+      { title: "Tempo Médio de Inspeção", value: `${avgDuration} min`, trend: -1, trendLabel: "Eficiência", tooltip: "Duração média gasta pelo motorista para concluir o checklist." }
     ]
   }
 }
