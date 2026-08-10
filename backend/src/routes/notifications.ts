@@ -104,67 +104,7 @@ async function syncSystemNotifications() {
     console.warn("Notice syncing system notifications fallback:", err);
   }
 
-  // Seed default realistic notifications if empty (e.g. NF-e, maintenance, documents)
-  if (dynamicNotifications.length === 0 && newItems.length === 0) {
-    const seedNotifications: NotificationItem[] = [
-      {
-        id: "nfe-sefaz-101",
-        title: "⚡ Nova NF-e Detectada no CNPJ (SEFAZ)",
-        message: "NF-e nº 084.912/2026 emitida por Posto Graal S/A (Combustível) - Valor: R$ 2.480,00. Clique para conciliar.",
-        type: "nfe",
-        severity: "info",
-        link: "/financeiro/despesas",
-        read: false,
-        createdAt: new Date(Date.now() - 5 * 60000).toISOString()
-      },
-      {
-        id: "doc-cnh-202",
-        title: "⚠️ CNH Próxima ao Vencimento",
-        message: "A CNH do motorista Carlos Eduardo Santos (Cat. E) vence em 14 dias (17/08/2026).",
-        type: "document",
-        severity: "warning",
-        link: "/drivers",
-        read: false,
-        createdAt: new Date(Date.now() - 45 * 60000).toISOString()
-      },
-      {
-        id: "maint-prev-303",
-        title: "🛠️ Manutenção Preventiva Pendente",
-        message: "Veículo Volvo FH 540 (Placa ABC-4K12) atingiu 120.000 km. Revisa recomendada de freios e óleo.",
-        type: "maintenance",
-        severity: "warning",
-        link: "/maintenance/preventive",
-        read: false,
-        createdAt: new Date(Date.now() - 120 * 60000).toISOString()
-      },
-      {
-        id: "nfe-sefaz-102",
-        title: "⚡ Nova NF-e de Peças Automotivas",
-        message: "NF-e nº 012.304/2026 emitida por Scania Brasil Peças - Valor: R$ 6.150,00 vinculada à OS #1042.",
-        type: "nfe",
-        severity: "success",
-        link: "/financeiro/despesas",
-        read: false,
-        createdAt: new Date(Date.now() - 180 * 60000).toISOString()
-      },
-      {
-        id: "fine-detran-404",
-        title: "🛑 Notificação de Infração Registrada",
-        message: "Multa por Excesso de Velocidade (BR-116 km 210) atribuída ao caminhão MNO-9P88. R$ 195,23.",
-        type: "fine",
-        severity: "error",
-        link: "/fines",
-        read: false,
-        createdAt: new Date(Date.now() - 360 * 60000).toISOString()
-      }
-    ];
-    dynamicNotifications.push(...seedNotifications);
-  }
-
-  if (newItems.length > 0) {
-    dynamicNotifications.unshift(...newItems);
-  }
-
+  // Dynamic notifications list populated only from real database records (documents, fines, maintenance)
   lastSyncTime = Date.now();
   return dynamicNotifications;
 }

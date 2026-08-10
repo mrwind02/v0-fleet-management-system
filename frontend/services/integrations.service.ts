@@ -125,8 +125,8 @@ export const INITIAL_INTEGRATIONS_CATALOG: IntegrationItem[] = [
       { key: "certFile", label: "Arquivo do Certificado Digital A1 (.pfx / .p12)", type: "certificate", value: "" },
       { key: "certPassword", label: "Senha do Certificado Digital", type: "password", value: "", placeholder: "Sua senha do arquivo .pfx", masked: true },
       { key: "certStatus", label: "Certificado Digital A1 (Status)", type: "text", value: "Nenhum certificado A1 configurado" },
-      { key: "certCorporateName", label: "Razão Social Reconhecida", type: "text", value: "" },
-      { key: "lastNsu", label: "Último NSU Consultado", type: "text", value: "000000000000000" }
+      { key: "certCorporateName", label: "Razão Social Reconhecida", type: "text", value: "MAPEAR CONSULTORIA AGROFLORESTAL LTDA" },
+      { key: "lastNsu", label: "Último NSU Consultado", type: "text", value: "000000000001489" }
     ]
   },
   {

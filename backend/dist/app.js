@@ -8,12 +8,21 @@ const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
 const routes_1 = require("./routes");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
 // Middlewares
-app.use((0, helmet_1.default)());
+app.use((0, helmet_1.default)({
+    crossOriginResourcePolicy: false,
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet_1.default.contentSecurityPolicy.getDefaultDirectives(),
+            "frame-ancestors": ["'self'", "http://localhost:3000", "https://frotaone.vercel.app"],
+        },
+    },
+}));
 app.use((0, cors_1.default)({
     origin: [
         "http://localhost:3000",
@@ -28,6 +37,8 @@ app.use((0, cors_1.default)({
 app.use((0, morgan_1.default)("combined"));
 app.use(express_1.default.json({ limit: "50mb" }));
 app.use(express_1.default.urlencoded({ limit: "50mb", extended: true }));
+// Serve static files from uploads folder
+app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "../uploads")));
 (0, routes_1.setupRoutes)(app);
 // Swagger/OpenAPI
 app.get("/api-docs", (req, res) => {

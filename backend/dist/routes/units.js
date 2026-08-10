@@ -9,4 +9,7 @@ const auth_1 = require("../middlewares/auth");
 const router = express_1.default.Router();
 const controller = new UnitController_1.UnitController();
 router.get("/", auth_1.authenticateToken, (req, res) => controller.getAll(req, res));
+router.post("/", auth_1.authenticateToken, (req, res) => controller.create(req, res));
+router.put("/:id", auth_1.authenticateToken, (req, res) => controller.update(req, res));
+router.delete("/:id", auth_1.authenticateToken, (req, res) => controller.delete(req, res));
 exports.default = router;

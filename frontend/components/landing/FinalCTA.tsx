@@ -32,12 +32,6 @@ export function FinalCTA() {
               Começar gratuitamente <ArrowRight className="w-5 h-5" />
             </Button>
           </Link>
-
-          <Link href="#explorer">
-            <Button size="lg" variant="outline" className="h-13 px-8 text-base font-semibold border-slate-800 text-slate-300 hover:bg-slate-900 rounded-xl">
-              Explorar ERP Demonstrativo
-            </Button>
-          </Link>
         </div>
       </div>
     </section>

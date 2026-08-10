@@ -10,32 +10,49 @@ import { FrotaOneLogo } from "@/components/ui/FrotaOneLogo"
 export function Navbar() {
   const [scrolled, setScrolled] = React.useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
+  const [activeSection, setActiveSection] = React.useState<string>("")
+
+  const navLinks = [
+    { label: "O ERP", href: "#erp", id: "erp" },
+    { label: "Módulos", href: "#modulos", id: "modulos" },
+    { label: "Diferenciais", href: "#diferenciais", id: "diferenciais" },
+    { label: "Integrações", href: "#integracoes", id: "integracoes" },
+    { label: "Planos", href: "#planos", id: "planos" },
+    { label: "FAQ", href: "#faq", id: "faq" },
+  ]
 
   React.useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
+
+      const sectionIds = ["erp", "modulos", "diferenciais", "integracoes", "planos", "faq"]
+      const viewportHeight = window.innerHeight
+      let currentActive = ""
+
+      for (const id of sectionIds) {
+        const el = document.getElementById(id)
+        if (el) {
+          const rect = el.getBoundingClientRect()
+          if (rect.top <= viewportHeight * 0.45 && rect.bottom >= 100) {
+            currentActive = id
+          }
+        }
+      }
+      setActiveSection(currentActive)
     }
-    window.addEventListener("scroll", handleScroll)
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    handleScroll()
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  const navLinks = [
-    { label: "O ERP", href: "#erp" },
-    { label: "Módulos", href: "#modulos" },
-    { label: "Diferenciais", href: "#diferenciais" },
-    { label: "Integrações", href: "#integracoes" },
-    { label: "Planos", href: "#planos" },
-    { label: "FAQ", href: "#faq" },
-  ]
-
-  const handleScrollTo = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleScrollTo = (e: React.MouseEvent<HTMLAnchorElement>, href: string, id: string) => {
     e.preventDefault()
+    setActiveSection(id)
     if (href.startsWith("#")) {
       const targetEl = document.querySelector(href)
       if (targetEl) {
-        const yOffset = -55
-        const y = targetEl.getBoundingClientRect().top + window.pageYOffset + yOffset
-        window.scrollTo({ top: y, behavior: "smooth" })
+        targetEl.scrollIntoView({ behavior: "smooth" })
       }
     }
   }
@@ -45,8 +62,8 @@ export function Navbar() {
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
-            ? "bg-white/90 backdrop-blur-md border-b border-slate-200/80 py-2 shadow-xs"
-            : "bg-transparent py-2.5"
+            ? "bg-white/95 backdrop-blur-md border-b border-slate-200/80 py-2.5 shadow-xs"
+            : "bg-transparent py-3"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
@@ -64,18 +81,32 @@ export function Navbar() {
             <FrotaOneLogo showTagline={true} size="md" />
           </Link>
 
-          {/* Desktop Nav Links */}
+          {/* Desktop Nav Links (No background box) */}
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                onClick={(e) => handleScrollTo(e, link.href)}
-                className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
-              >
-                {link.label}
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = activeSection === link.id
+              return (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  onClick={(e) => handleScrollTo(e, link.href, link.id)}
+                  className={`relative py-1 text-xs font-semibold transition-colors duration-200 cursor-pointer ${
+                    isActive
+                      ? "text-blue-600 font-bold"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {link.label}
+                  {isActive && (
+                    <motion.span
+                      layoutId="activeNavUnderline"
+                      className="absolute -bottom-1 left-0 right-0 h-0.5 bg-blue-600 rounded-full"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </a>
+              )
+            })}
           </nav>
 
           {/* Desktop Actions */}
@@ -111,7 +142,7 @@ export function Navbar() {
                 key={link.label}
                 href={link.href}
                 onClick={(e) => {
-                  handleScrollTo(e, link.href)
+                  handleScrollTo(e, link.href, link.id)
                   setMobileMenuOpen(false)
                 }}
                 className="text-xs font-semibold text-slate-700 py-2 border-b border-slate-100 flex items-center justify-between"

@@ -15,5 +15,34 @@ class UnitController {
             res.status(400).json({ success: false, error: error.message });
         }
     }
+    async create(req, res) {
+        try {
+            const unit = await this.unitService.create(req.body);
+            res.status(201).json({ success: true, data: unit });
+        }
+        catch (error) {
+            res.status(400).json({ success: false, error: error.message });
+        }
+    }
+    async update(req, res) {
+        try {
+            const { id } = req.params;
+            const unit = await this.unitService.update(id, req.body);
+            res.json({ success: true, data: unit });
+        }
+        catch (error) {
+            res.status(400).json({ success: false, error: error.message });
+        }
+    }
+    async delete(req, res) {
+        try {
+            const { id } = req.params;
+            await this.unitService.delete(id);
+            res.json({ success: true, message: "Filial excluída com sucesso" });
+        }
+        catch (error) {
+            res.status(400).json({ success: false, error: error.message });
+        }
+    }
 }
 exports.UnitController = UnitController;

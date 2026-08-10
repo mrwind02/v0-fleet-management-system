@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { AppLayout } from "@/components/layout/AppLayout"
 import { PageHeader } from "@/components/ui/page-header"
@@ -35,32 +35,7 @@ type ExtendedFine = {
   lastUpdate: string
 }
 
-const mockAlerts: AlertItem[] = [
-  {
-    id: "1",
-    type: "error",
-    title: "5 multas vencem esta semana",
-    description: "Verifique os pagamentos pendentes."
-  },
-  {
-    id: "2",
-    type: "warning",
-    title: "3 recursos aguardando documentação",
-    description: "Anexe os documentos necessários."
-  },
-  {
-    id: "3",
-    type: "error",
-    title: "Motorista João Silva atingiu limite de pontos",
-    description: "CNH em risco de suspensão."
-  },
-  {
-    id: "4",
-    type: "warning",
-    title: "Veículo PQF3C53 recebeu 4 multas",
-    description: "Excesso de infrações neste mês."
-  }
-]
+// Alerts calculated dynamically from real fines data
 
 const categoryData = [
   { name: "Excesso Veloc.", value: 45 },
@@ -187,6 +162,75 @@ export default function FinesPage() {
     criticalDriver: { title: "N/A", value: "0 Pontos", description: "Sem dados" },
     trend: { value: "0%", description: "Sem dados", isPositive: true }
   }
+
+  const realAlerts: AlertItem[] = useMemo(() => {
+    const items: AlertItem[] = []
+
+    const dueSoon = fines.filter(f => f.status === "Em Aberto" && f.daysRemaining !== null && f.daysRemaining <= 7 && f.daysRemaining >= 0)
+    if (dueSoon.length > 0) {
+      items.push({
+        id: "due-soon",
+        type: "error",
+        title: `${dueSoon.length} multa(s) vence(m) esta semana`,
+        description: "Verifique os pagamentos pendentes."
+      })
+    }
+
+    const inAppeal = fines.filter(f => f.status === "Em Recurso")
+    if (inAppeal.length > 0) {
+      items.push({
+        id: "in-appeal",
+        type: "warning",
+        title: `${inAppeal.length} recurso(s) aguardando documentação`,
+        description: "Anexe os documentos necessários aos processos."
+      })
+    }
+
+    const driverPts: Record<string, number> = {}
+    fines.forEach(f => {
+      if (f.driver && f.driver !== "-") {
+        driverPts[f.driver] = (driverPts[f.driver] || 0) + Number(f.points || 0)
+      }
+    })
+    Object.entries(driverPts).forEach(([drv, pts], i) => {
+      if (pts >= 15) {
+        items.push({
+          id: `drv-pts-${i}`,
+          type: "error",
+          title: `Motorista ${drv} acumulou ${pts} pontos`,
+          description: "CNH em risco de suspensão."
+        })
+      }
+    })
+
+    const vehCount: Record<string, number> = {}
+    fines.forEach(f => {
+      if (f.vehicle && f.vehicle !== "-") {
+        vehCount[f.vehicle] = (vehCount[f.vehicle] || 0) + 1
+      }
+    })
+    Object.entries(vehCount).forEach(([veh, count], i) => {
+      if (count >= 3) {
+        items.push({
+          id: `veh-cnt-${i}`,
+          type: "warning",
+          title: `Veículo ${veh} acumulou ${count} multas`,
+          description: "Excesso de infrações neste período."
+        })
+      }
+    })
+
+    if (items.length === 0) {
+      items.push({
+        id: "all-clear",
+        type: "success",
+        title: "Nenhum alerta pendente",
+        description: "Toda a gestão de multas está em conformidade."
+      })
+    }
+
+    return items
+  }, [fines])
 
   const handleDensityChange = (newDensity: TableDensity) => {
     setDensity(newDensity)
@@ -475,7 +519,7 @@ export default function FinesPage() {
           <div className="xl:col-span-1">
             <AlertPanel 
               title="Atenção Operacional" 
-              alerts={mockAlerts} 
+              alerts={realAlerts} 
               className="h-full border-red-200/50 dark:border-red-900/30" 
             />
           </div>

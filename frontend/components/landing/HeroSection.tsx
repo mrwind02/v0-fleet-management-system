@@ -31,7 +31,7 @@ import { FrotaOneIconMark } from "@/components/ui/FrotaOneLogo"
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-[calc(100vh-60px)] flex flex-col justify-center overflow-hidden bg-white py-2 sm:py-2.5 font-sans">
+    <section className="relative min-h-[calc(100vh-50px)] flex flex-col justify-center overflow-hidden bg-white pt-14 pb-2 font-sans">
       {/* Background Radial Glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[450px] bg-blue-50/60 blur-[110px] rounded-full pointer-events-none -z-10" />
 
@@ -66,12 +66,6 @@ export function HeroSection() {
               <Link href="/login">
                 <Button size="sm" className="w-full sm:w-auto h-9 px-5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-600/20 gap-2">
                   Começar agora <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </Link>
-
-              <Link href="/login">
-                <Button size="sm" variant="outline" className="w-full sm:w-auto h-9 px-5 text-xs font-semibold border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl gap-2">
-                  <Calendar className="w-3.5 h-3.5 text-slate-500" /> Agendar demonstração
                 </Button>
               </Link>
             </div>
@@ -323,28 +317,28 @@ export function HeroSection() {
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-1.5 font-sans items-stretch">
                       
                       {/* Tendência de Gastos Area Chart */}
-                      <div className="lg:col-span-4 bg-white border border-slate-200 rounded-lg p-2.5 shadow-2xs flex flex-col justify-between h-full">
-                        <div className="flex justify-between items-center mb-1">
-                          <h4 className="text-[11px] font-extrabold text-slate-900 tracking-tight">Tendência de Gastos</h4>
-                          <span className="text-[8px] font-semibold text-slate-600 border border-slate-200 rounded px-1 py-0.5 flex items-center gap-0.5 cursor-pointer bg-slate-50">
+                      <div className="lg:col-span-5 bg-white border border-slate-200 rounded-lg p-2.5 shadow-2xs flex flex-col justify-between h-full overflow-hidden">
+                        <div className="flex justify-between items-center mb-1 gap-1">
+                          <h4 className="text-[11px] font-extrabold text-slate-900 tracking-tight whitespace-nowrap">Tendência de Gastos</h4>
+                          <span className="text-[7.5px] font-semibold text-slate-600 border border-slate-200 rounded px-1.5 py-0.5 flex items-center gap-0.5 cursor-pointer bg-slate-50 shrink-0 whitespace-nowrap">
                             Todos os tipos <ChevronDown className="w-2 h-2 text-slate-400" />
                           </span>
                         </div>
 
                         {/* Area Chart Graphic */}
-                        <div className="h-20 flex flex-col justify-end pt-1 relative">
+                        <div className="h-20 flex flex-col justify-end pt-1 relative overflow-hidden">
                           <div className="absolute left-0 top-1 bottom-4 flex flex-col justify-between text-[6.5px] text-slate-300 pointer-events-none font-sans">
                             <span>R$ 45k</span>
                             <span>R$ 25k</span>
                             <span>R$ 0</span>
                           </div>
-                          <div className="ml-5 h-14 relative w-full">
-                            <svg className="w-full h-full text-blue-500/20 overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 50">
-                              <path d="M0,30 Q16,25 32,22 T66,15 T100,8 L100,50 L0,50 Z" fill="currentColor" />
-                              <path d="M0,30 Q16,28 32,22 T66,15 T100,8" fill="none" stroke="#2563eb" strokeWidth="2.2" strokeLinecap="round" />
+                          <div className="ml-6 h-13 relative w-[calc(100%-24px)] overflow-hidden">
+                            <svg className="w-full h-full text-blue-500/20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 100 50">
+                              <path d="M0,35 Q16,30 32,24 T66,16 T100,10 L100,50 L0,50 Z" fill="currentColor" />
+                              <path d="M0,35 Q16,30 32,24 T66,16 T100,10" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" />
                             </svg>
                           </div>
-                          <div className="ml-5 flex justify-between text-[7.5px] text-slate-400 pt-1 border-t border-slate-100 font-sans">
+                          <div className="ml-6 flex justify-between text-[7px] text-slate-400 pt-1 border-t border-slate-100 font-sans pr-1">
                             <span>Jan</span>
                             <span>Fev</span>
                             <span>Mar</span>
@@ -357,12 +351,12 @@ export function HeroSection() {
                       </div>
 
                       {/* Gastos por Categoria Donut */}
-                      <div className="lg:col-span-5 bg-white border border-slate-200 rounded-lg p-2.5 shadow-2xs flex flex-col justify-between h-full">
+                      <div className="lg:col-span-4 bg-white border border-slate-200 rounded-lg p-2.5 shadow-2xs flex flex-col justify-between h-full overflow-hidden">
                         <h4 className="text-[11px] font-extrabold text-slate-900 tracking-tight mb-1">Gastos por Categoria</h4>
-                        <div className="flex items-center gap-3 text-slate-700 my-auto">
+                        <div className="flex items-center gap-2 text-slate-700 my-auto">
                           
                           {/* Donut graphic */}
-                          <div className="relative w-13 h-13 shrink-0 flex items-center justify-center">
+                          <div className="relative w-12 h-12 shrink-0 flex items-center justify-center">
                             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                               <path strokeDasharray="55.5 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#2563eb" strokeWidth="4.2" />
                               <path strokeDasharray="29.0 100" strokeDashoffset="-55.5" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f97316" strokeWidth="4.2" />
@@ -370,43 +364,43 @@ export function HeroSection() {
                               <path strokeDasharray="4.4 100" strokeDashoffset="-95.6" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#a855f7" strokeWidth="4.2" />
                             </svg>
                             <div className="absolute text-center">
-                              <span className="text-[6.5px] text-slate-400 block font-semibold leading-none font-sans">Total</span>
-                              <span className="text-[8.5px] font-extrabold text-slate-900 font-sans whitespace-nowrap">R$ 38,6k</span>
+                              <span className="text-[6px] text-slate-400 block font-semibold leading-none font-sans">Total</span>
+                              <span className="text-[8px] font-extrabold text-slate-900 font-sans whitespace-nowrap">R$ 38,6k</span>
                             </div>
                           </div>
 
                           {/* Category Legend */}
-                          <div className="text-[8px] space-y-1 font-semibold font-sans w-full">
+                          <div className="text-[7.5px] space-y-0.5 font-semibold font-sans w-full">
                             <div className="flex items-center justify-between gap-1 text-slate-700">
                               <div className="flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
-                                <span>Abastecimentos</span>
+                                <span className="truncate">Abastecimentos</span>
                               </div>
-                              <span className="text-slate-500 font-normal text-[7.5px] whitespace-nowrap">R$ 21.450,00 (55.5%)</span>
+                              <span className="text-slate-500 font-normal text-[7px] shrink-0">R$ 21,4k (55%)</span>
                             </div>
 
                             <div className="flex items-center justify-between gap-1 text-slate-700">
                               <div className="flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                                <span>Despesas</span>
+                                <span className="truncate">Despesas</span>
                               </div>
-                              <span className="text-slate-500 font-normal text-[7.5px] whitespace-nowrap">R$ 4.280,40 (11.1%)</span>
+                              <span className="text-slate-500 font-normal text-[7px] shrink-0">R$ 4,2k (11%)</span>
                             </div>
 
                             <div className="flex items-center justify-between gap-1 text-slate-700">
                               <div className="flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                                <span>Manutenção</span>
+                                <span className="truncate">Manutenção</span>
                               </div>
-                              <span className="text-slate-500 font-normal text-[7.5px] whitespace-nowrap">R$ 11.200,00 (29.0%)</span>
+                              <span className="text-slate-500 font-normal text-[7px] shrink-0">R$ 11,2k (29%)</span>
                             </div>
 
                             <div className="flex items-center justify-between gap-1 text-slate-700">
                               <div className="flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
-                                <span>Multas</span>
+                                <span className="truncate">Multas</span>
                               </div>
-                              <span className="text-slate-500 font-normal text-[7.5px] whitespace-nowrap">R$ 1.720,00 (4.4%)</span>
+                              <span className="text-slate-500 font-normal text-[7px] shrink-0">R$ 1,7k (4%)</span>
                             </div>
                           </div>
 

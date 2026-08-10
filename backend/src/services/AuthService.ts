@@ -33,14 +33,14 @@ export class AuthService {
     }
 
     if (result.rows.length === 0) {
-      throw new Error("Invalid credentials")
+      throw new Error("E-mail ou senha incorretos. Por favor, verifique suas credenciais e tente novamente.")
     }
 
     const user: any = result.rows[0]
 
     const passwordMatch = await comparePassword(password, user.password_hash)
     if (!passwordMatch) {
-      throw new Error("Invalid credentials")
+      throw new Error("E-mail ou senha incorretos. Por favor, verifique suas credenciais e tente novamente.")
     }
 
     // Atualizar último login

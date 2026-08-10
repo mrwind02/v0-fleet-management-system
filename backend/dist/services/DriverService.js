@@ -21,13 +21,23 @@ class DriverService {
         return this.mapToDriver(result.rows[0]);
     }
     async getAll(isActive) {
-        let sql = "SELECT * FROM drivers";
+        let sql = `
+      SELECT
+        d.*,
+        v.plate as vehicle_plate,
+        v.id as vehicle_id,
+        v.brand as vehicle_brand,
+        v.model as vehicle_model
+      FROM drivers d
+      LEFT JOIN vehicle_driver_assignment vda ON d.id = vda.driver_id AND vda.is_current = true
+      LEFT JOIN vehicles v ON vda.vehicle_id = v.id
+    `;
         const params = [];
         if (isActive !== undefined) {
-            sql += " WHERE is_active = $1";
+            sql += " WHERE d.is_active = $1";
             params.push(isActive);
         }
-        sql += " ORDER BY created_at DESC";
+        sql += " ORDER BY d.created_at DESC";
         const result = await (0, database_1.query)(sql, params);
         if (result.rows && result.rows.length > 0) {
             return result.rows.map((row) => this.mapToDriver(row));
@@ -114,6 +124,11 @@ class DriverService {
             isActive: row.is_active,
             createdAt: row.created_at,
             updatedAt: row.updated_at,
+            // Campos do veículo atual (retornados pelo JOIN em getAll)
+            vehiclePlate: row.vehicle_plate || null,
+            vehicleId: row.vehicle_id || null,
+            vehicleBrand: row.vehicle_brand || null,
+            vehicleModel: row.vehicle_model || null,
         };
     }
 }

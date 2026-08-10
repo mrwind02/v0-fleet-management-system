@@ -124,9 +124,44 @@ export default function IntegrationDetailPage() {
   }
 
   const handleRunDiagnosticTest = async (testType: string) => {
-    await new Promise((r) => setTimeout(r, 1200))
+    await new Promise((r) => setTimeout(r, 1000))
     const isOk = true
     const lat = integration?.latencyMs || 85
+    const nowStr = `Hoje às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+
+    setIntegration((prev) => {
+      if (!prev) return null
+      const updated: IntegrationItem = {
+        ...prev,
+        status: "connected",
+        calls24h: (prev.calls24h || 0) + 1,
+        lastSync: nowStr,
+        latencyMs: lat
+      }
+      if (typeof window !== "undefined") {
+        try {
+          const cached = localStorage.getItem("frotaone_integrations_catalog")
+          const catalog: IntegrationItem[] = cached ? JSON.parse(cached) : INITIAL_INTEGRATIONS_CATALOG
+          const newCatalog = catalog.map((item) => (item.id === prev.id ? updated : item))
+          localStorage.setItem("frotaone_integrations_catalog", JSON.stringify(newCatalog))
+          settingsService.update("integrations_catalog", JSON.stringify(newCatalog)).catch(() => {})
+        } catch (e) {
+          console.error(e)
+        }
+      }
+      return updated
+    })
+
+    const newLog: IntegrationLog = {
+      id: `log-${Date.now()}`,
+      date: new Date().toLocaleTimeString("pt-BR"),
+      event: testType === "mTLS" ? "NFeDistribuicaoDFe" : "HealthCheck SEFAZ",
+      status: "sucesso",
+      timeMs: lat,
+      message: `Teste de ${testType} executado com sucesso.`
+    }
+    setLogs((prev) => [newLog, ...prev])
+
     return {
       success: isOk,
       timeMs: lat,

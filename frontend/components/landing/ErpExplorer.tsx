@@ -1,145 +1,254 @@
 "use client"
 
 import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { LayoutDashboard, Car, Users, Fuel, Wrench, AlertCircle, FileText, BarChart3, ChevronRight, Activity, ArrowUpRight } from "lucide-react"
+import Link from "next/link"
+import { ArrowRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+
+interface CardContent {
+  id: string
+  number: string
+  title: string
+  paragraph1: string
+  paragraph2: string
+  showCta?: boolean
+}
 
 export function ErpExplorer() {
-  const [activeTab, setActiveTab] = React.useState<string>("dashboard")
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const [scrollProgress, setScrollProgress] = React.useState<number>(0)
+  const [activeCardIndex, setActiveCardIndex] = React.useState<number>(0)
 
-  const tabs = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "veiculos", label: "Veículos", icon: Car },
-    { id: "motoristas", label: "Motoristas", icon: Users },
-    { id: "abastecimentos", label: "Abastecimentos", icon: Fuel },
-    { id: "os", label: "Ordens de Serviço", icon: Wrench },
-    { id: "preventivas", label: "Preventivas", icon: AlertCircle },
-    { id: "indicadores", label: "Indicadores BI", icon: BarChart3 },
+  React.useEffect(() => {
+    const handleScroll = () => {
+      if (!containerRef.current) return
+      const rect = containerRef.current.getBoundingClientRect()
+      const windowHeight = window.innerHeight
+      const totalScrollable = rect.height - windowHeight
+
+      if (totalScrollable <= 0) return
+
+      // Progress from 0 (top of section hits viewport top) to 1 (bottom of section hits viewport bottom)
+      const rawProgress = -rect.top / totalScrollable
+      const clampedProgress = Math.max(0, Math.min(1, rawProgress))
+
+      setScrollProgress(clampedProgress)
+
+      if (clampedProgress < 0.38) {
+        setActiveCardIndex(0)
+      } else if (clampedProgress < 0.72) {
+        setActiveCardIndex(1)
+      } else {
+        setActiveCardIndex(2)
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    handleScroll()
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  const handleStepClick = (index: number) => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const windowHeight = window.innerHeight
+    const totalScrollable = rect.height - windowHeight
+
+    const targetProgress = index === 0 ? 0.05 : index === 1 ? 0.50 : 0.90
+    const targetScrollY = window.pageYOffset + rect.top + targetProgress * totalScrollable
+
+    window.scrollTo({ top: targetScrollY, behavior: "smooth" })
+  }
+
+  const cardsData: CardContent[] = [
+    {
+      id: "card-01",
+      number: "01",
+      title: "Controle total da sua frota",
+      paragraph1:
+        "Gerencie veículos, motoristas, abastecimentos, documentos, despesas e manutenções em um único ambiente, com informações centralizadas e atualizadas em tempo real.",
+      paragraph2:
+        "Enquanto outros sistemas distribuem dados em diferentes telas, o FrotaOne conecta toda a operação para oferecer uma visão completa da sua frota."
+    },
+    {
+      id: "card-02",
+      number: "02",
+      title: "Manutenções inteligentes",
+      paragraph1:
+        "Planeje preventivas, acompanhe Ordens de Serviço, registre peças, mão de obra e custos sem perder o histórico de cada veículo.",
+      paragraph2:
+        "Todo o processo é integrado, reduzindo paradas inesperadas e aumentando a disponibilidade da frota."
+    },
+    {
+      id: "card-03",
+      number: "03",
+      title: "Decisões baseadas em dados",
+      paragraph1:
+        "Dashboards modernos transformam informações operacionais em indicadores estratégicos.",
+      paragraph2:
+        "Acompanhe custos por veículo, consumo de combustível, desempenho da frota, despesas, documentos e produtividade em tempo real.",
+      showCta: true
+    }
   ]
 
   return (
-    <section id="explorer" className="h-[calc(100vh-60px)] min-h-[calc(100vh-60px)] flex flex-col justify-center bg-slate-50 relative overflow-hidden py-4">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+    <section
+      id="erp"
+      ref={containerRef}
+      className="relative h-[260vh] sm:h-[280vh] bg-slate-50 font-sans border-t border-slate-200/80 scroll-mt-20"
+    >
+      {/* Sticky Viewport Area */}
+      <div className="sticky top-0 h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 overflow-hidden">
         
-        {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-4">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold mb-1.5">
-            ERP Explorer • Test Drive sem cadastro
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 mb-1">
-            Explore o FrotaOne em tempo real.
-          </h2>
-          <p className="text-slate-600 text-xs sm:text-sm font-normal">
-            Clique nas abas abaixo para navegar pela interface oficial do sistema.
-          </p>
-        </div>
+        {/* Background Subtle Ambient Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[550px] bg-blue-100/30 blur-[150px] rounded-full pointer-events-none -z-0" />
 
-        {/* Tab Selector */}
-        <div className="flex items-center justify-center gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none">
-          {tabs.map((tab) => {
-            const Icon = tab.icon
-            const isActive = activeTab === tab.id
+        {/* Storytelling Cards Area */}
+        <div className="max-w-7xl mx-auto w-full relative h-[460px] sm:h-[400px] flex items-center justify-center">
+          {cardsData.map((card, idx) => {
+            // Calculate state for each card based on scrollProgress
+            let y = 0
+            let scale = 1
+            let opacity = 1
+            let blur = "blur(0px)"
+            let zIndex = 10
+
+            if (idx === 0) {
+              if (scrollProgress < 0.32) {
+                // Focused
+                y = 0
+                scale = 1
+                opacity = 1
+                blur = "blur(0px)"
+                zIndex = 10
+              } else {
+                // Pushed back
+                const p = Math.min(1, (scrollProgress - 0.32) / 0.15)
+                y = -24 * p
+                scale = 1 - 0.03 * p
+                opacity = 1 - 0.6 * p
+                blur = `blur(${3 * p}px)`
+                zIndex = 5
+              }
+            } else if (idx === 1) {
+              if (scrollProgress < 0.28) {
+                // Below viewport
+                y = 500
+                scale = 0.97
+                opacity = 0
+                blur = "blur(4px)"
+                zIndex = 20
+              } else if (scrollProgress < 0.42) {
+                // Sliding up into focus
+                const p = (scrollProgress - 0.28) / 0.14
+                y = 500 * (1 - p)
+                scale = 0.97 + 0.03 * p
+                opacity = p
+                blur = `blur(${4 * (1 - p)}px)`
+                zIndex = 20
+              } else if (scrollProgress < 0.65) {
+                // Focused
+                y = 0
+                scale = 1
+                opacity = 1
+                blur = "blur(0px)"
+                zIndex = 20
+              } else {
+                // Pushed back
+                const p = Math.min(1, (scrollProgress - 0.65) / 0.15)
+                y = -24 * p
+                scale = 1 - 0.03 * p
+                opacity = 1 - 0.6 * p
+                blur = `blur(${3 * p}px)`
+                zIndex = 15
+              }
+            } else if (idx === 2) {
+              if (scrollProgress < 0.60) {
+                // Below viewport
+                y = 500
+                scale = 0.97
+                opacity = 0
+                blur = "blur(4px)"
+                zIndex = 30
+              } else if (scrollProgress < 0.78) {
+                // Sliding up into focus
+                const p = (scrollProgress - 0.60) / 0.18
+                y = 500 * (1 - p)
+                scale = 0.97 + 0.03 * p
+                opacity = p
+                blur = `blur(${4 * (1 - p)}px)`
+                zIndex = 30
+              } else {
+                // Focused
+                y = 0
+                scale = 1
+                opacity = 1
+                blur = "blur(0px)"
+                zIndex = 30
+              }
+            }
+
             return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                    : "bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-100"
-                }`}
+              <div
+                key={card.id}
+                onClick={() => handleStepClick(idx)}
+                style={{
+                  transform: `translate3d(0, ${y}px, 0) scale(${scale})`,
+                  opacity: opacity,
+                  filter: blur,
+                  zIndex: zIndex,
+                  transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, filter 0.4s ease"
+                }}
+                className="absolute inset-x-0 mx-auto w-full max-w-7xl bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-10 lg:p-12 shadow-2xl shadow-slate-900/10 cursor-pointer pointer-events-auto select-none"
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
-              </button>
-            )}
-          )}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-center">
+                  
+                  {/* Left Column: Enormous Title */}
+                  <div className="lg:col-span-5 flex flex-col justify-center">
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black text-slate-900 tracking-tight leading-[1.08]">
+                      {card.title}
+                    </h2>
+                  </div>
+
+                  {/* Right Column: Paragraph 1 & Paragraph 2 */}
+                  <div className="lg:col-span-7 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-slate-100 pt-5 lg:pt-0 lg:pl-10 space-y-4">
+                    <p className="text-slate-900 text-base sm:text-lg leading-relaxed font-semibold">
+                      {card.paragraph1}
+                    </p>
+
+                    <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-normal">
+                      {card.paragraph2}
+                    </p>
+
+                    {card.showCta && (
+                      <div className="pt-2 flex flex-wrap items-center gap-3">
+                        <Link href="/login">
+                          <Button size="default" className="h-11 px-6 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md shadow-blue-600/20 gap-2">
+                            Começar agora <ArrowRight className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              </div>
+            )
+          })}
         </div>
 
-        {/* Simulated Browser Workspace Container */}
-        <div className="max-w-5xl mx-auto bg-white border border-slate-200 rounded-2xl shadow-lg shadow-slate-900/5 overflow-hidden h-[380px] sm:h-[400px] flex flex-col">
-          
-          {/* Browser Address Bar */}
-          <div className="px-3 py-1.5 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-              <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-              <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-            </div>
-            <div className="text-[10px] font-mono text-slate-500 bg-white px-3 py-0.5 rounded-md border border-slate-200/80">
-              https://app.frotaone.com.br/{activeTab}
-            </div>
-            <a href="/login" className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
-              Acessar ERP completo <ArrowUpRight className="w-3 h-3" />
-            </a>
-          </div>
-
-          {/* Dynamic Content View Area */}
-          <div className="p-4 flex-1 overflow-y-auto bg-slate-50/50">
-            <AnimatePresence mode="wait">
-              {activeTab === "dashboard" && (
-                <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
-                  <div className="grid grid-cols-4 gap-3">
-                    <div className="p-3 bg-white border border-slate-200 rounded-xl">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold block">Veículos Ativos</span>
-                      <span className="text-xl font-bold font-mono text-slate-900">42 / 42</span>
-                    </div>
-                    <div className="p-3 bg-white border border-slate-200 rounded-xl">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold block">Gasto Mensal</span>
-                      <span className="text-xl font-bold font-mono text-slate-900">R$ 24.850</span>
-                    </div>
-                    <div className="p-3 bg-white border border-slate-200 rounded-xl">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold block">CPK Médio</span>
-                      <span className="text-xl font-bold font-mono text-slate-900">R$ 2,83/km</span>
-                    </div>
-                    <div className="p-3 bg-white border border-slate-200 rounded-xl">
-                      <span className="text-[10px] text-slate-500 uppercase font-bold block">Preventivas Em Dia</span>
-                      <span className="text-xl font-bold font-mono text-emerald-600">98.2%</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900">Status Geral da Operação</h4>
-                      <p className="text-[11px] text-slate-500">Frota com 100% de disponibilidade operacional neste turno.</p>
-                    </div>
-                    <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md">
-                      SISTEMA OPERACIONAL
-                    </span>
-                  </div>
-                </motion.div>
-              )}
-
-              {activeTab === "veiculos" && (
-                <motion.div key="veiculos" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
-                  <div className="bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-semibold flex justify-between items-center">
-                    <span>Scania R450 • Placa ABC-1234</span>
-                    <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Em rota • 142.800 km</span>
-                  </div>
-                  <div className="bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-semibold flex justify-between items-center">
-                    <span>Volvo FH 540 • Placa DEF-5678</span>
-                    <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Em rota • 98.400 km</span>
-                  </div>
-                  <div className="bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-semibold flex justify-between items-center">
-                    <span>Mercedes Actros • Placa GHI-9012</span>
-                    <span className="text-[10px] font-mono text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Revisão Agendada • 210.000 km</span>
-                  </div>
-                </motion.div>
-              )}
-
-              {activeTab !== "dashboard" && activeTab !== "veiculos" && (
-                <motion.div key="other" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col items-center justify-center text-center p-6 bg-white border border-slate-200 rounded-xl">
-                  <Activity className="w-8 h-8 text-blue-600 mb-2 animate-bounce" />
-                  <h4 className="text-sm font-bold text-slate-900 mb-1">Módulo {tabs.find(t=>t.id===activeTab)?.label} Ativo</h4>
-                  <p className="text-xs text-slate-500 max-w-sm mb-3">Dados simulados com métricas reais do sistema. Faça login para acessar relatórios completos.</p>
-                  <a href="/login" className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl">
-                    Entrar no Sistema ERP
-                  </a>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
+        {/* Step Indicator Controls */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-white/80 backdrop-blur-md px-4 py-2 rounded-full border border-slate-200/80 shadow-md">
+          {cardsData.map((c, i) => (
+            <button
+              key={c.id}
+              onClick={() => handleStepClick(i)}
+              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                activeCardIndex === i ? "w-8 bg-blue-600" : "w-2 bg-slate-300 hover:bg-slate-400"
+              }`}
+              title={`Ver Card ${c.number}`}
+            />
+          ))}
         </div>
 
       </div>

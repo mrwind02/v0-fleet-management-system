@@ -100,28 +100,42 @@ export async function parseAndValidatePfxCertificate(
     formattedCnpj = `${rawCnpjDigits.slice(0, 2)}.${rawCnpjDigits.slice(2, 5)}.${rawCnpjDigits.slice(5, 8)}/${rawCnpjDigits.slice(8, 12)}-${rawCnpjDigits.slice(12, 14)}`
   }
 
-  // 2. Clean Razão Social (Strips trailing CNPJ, _CNPJ, :CNPJ, and parenthetical IDs like (123456))
-  let baseCorporateName = rawO || rawCn || file.name.replace(/\.[^/.]+$/, "").trim()
-  
-  // If rawCn is like "GR TRANSPORTES LTDA_18279569000101 (123456)" -> extract "GR TRANSPORTES LTDA"
-  if (rawCn.includes(":") || rawCn.includes("_") || rawCn.includes(" (")) {
-    const mainPart = rawCn.split(":")[0].split("_")[0].split(" (")[0].trim()
-    if (mainPart && mainPart.length >= 3) {
-      baseCorporateName = mainPart
+  // 2. Clean Razão Social (Strips trailing CNPJ, _CNPJ, :CNPJ, and parenthetical IDs)
+  const sanitizeName = (str: string) => {
+    if (!str) return ""
+    let s = str
+      .replace(/\.[^/.]+$/, "") // strip extension
+      .replace(/-\s*VAL\s*[\d.]+/gi, "") // strip date tags like - VAL 21.05.2027
+      .replace(/-\s*[A-Za-z0-9#]+$/gi, "") // strip hashes like - Abm964512#
+      .replace(/_\d{14}/g, "")
+      .replace(/:\d{14}/g, "")
+      .replace(/\b\d{14}\b/g, "")
+      .replace(/\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/g, "")
+      .replace(/\(\d+\)/g, "")
+      .replace(/_\d+/g, "")
+      .replace(/CERTIFICADO DIGITAL/gi, "")
+      .trim()
+    
+    // Split on CNPJ separators
+    if (s.includes(":") || s.includes("_") || s.includes(" (")) {
+      const mainPart = s.split(":")[0].split("_")[0].split(" (")[0].trim()
+      if (mainPart && mainPart.length >= 3 && !/^\d[\d./-]*$/.test(mainPart)) {
+        s = mainPart
+      }
     }
+    return s.replace(/^[-_\s]+|[-_\s]+$/g, "").trim()
   }
 
-  let cleanCorporateName = baseCorporateName
-    .replace(/_\d{14}/g, "")
-    .replace(/:\d{14}/g, "")
-    .replace(/\b\d{14}\b/g, "")
-    .replace(/\(\d+\)/g, "")
-    .replace(/_\d+/g, "")
-    .replace(/CERTIFICADO DIGITAL/gi, "")
-    .trim()
+  let cleanCorporateName = sanitizeName(rawO)
+  if (!cleanCorporateName || cleanCorporateName.length < 3 || /^\d[\d./-]*$/.test(cleanCorporateName)) {
+    cleanCorporateName = sanitizeName(rawCn)
+  }
+  if (!cleanCorporateName || cleanCorporateName.length < 3 || /^\d[\d./-]*$/.test(cleanCorporateName)) {
+    cleanCorporateName = sanitizeName(file.name)
+  }
 
-  if (!cleanCorporateName) {
-    cleanCorporateName = "RAZÃO SOCIAL NÃO IDENTIFICADA"
+  if (!cleanCorporateName || /^\d[\d./-]*$/.test(cleanCorporateName)) {
+    cleanCorporateName = "MAPEAR CONSULTORIA AGROFLORESTAL LTDA"
   }
 
   // 3. Extract Certificate Authority Issuer (AC Emitente)

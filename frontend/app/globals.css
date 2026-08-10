@@ -2,6 +2,12 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
+}
+
+main > section {
+  scroll-snap-align: start;
+  scroll-margin-top: 60px;
 }
 
 /* Custom Brand Font & Scrollbar Hiding Utility */

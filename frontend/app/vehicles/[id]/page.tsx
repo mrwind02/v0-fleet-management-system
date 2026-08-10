@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { AppLayout } from "@/components/layout/AppLayout"
-import { ChevronRight, ArrowLeft, Settings2, FileText, Wrench, Shield, UserPlus, FileSearch, History, Activity, CalendarClock, DollarSign, Plus, Download, CarFront, FileSignature } from "lucide-react"
+import { ChevronRight, ArrowLeft, Settings2, FileText, Wrench, Shield, UserPlus, FileSearch, History, Activity, CalendarClock, DollarSign, Plus, Download, CarFront, FileSignature, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { VehicleForm } from "@/components/vehicles/VehicleForm"
 import { VehicleAssignmentModal } from "@/components/vehicles/VehicleAssignmentModal"
 import { vehicleService, fuelService, expenseService, workOrderService } from "@/services/api"
 import { fineService } from "@/services/fine.service"
+import { documentService } from "@/services/document.service"
 import useSWR from "swr"
 
 // Premium Components
@@ -187,6 +188,26 @@ export default function VehicleDetailsPage() {
   }
 
   const { data: costsData } = useSWR(vehicle ? `costs_${id}_${vehicle.plate}` : null, fetchCosts, { revalidateOnFocus: false })
+
+  const fetchVehicleDocs = async () => {
+    if (!id) return []
+    try {
+      const docs = await documentService.getDocuments()
+      if (Array.isArray(docs)) {
+        return docs.filter((d: any) =>
+          String(d.vehicle_id) === String(id) ||
+          String(d.vehicleId) === String(id) ||
+          (vehicle?.plate && String(d.related_to || '').toUpperCase().includes(String(vehicle.plate).toUpperCase())) ||
+          (vehicle?.plate && String(d.name || '').toUpperCase().includes(String(vehicle.plate).toUpperCase()))
+        )
+      }
+    } catch (e) {
+      console.warn("Could not fetch vehicle docs:", e)
+    }
+    return []
+  }
+
+  const { data: vehicleDocs } = useSWR(vehicle ? `vehicle_docs_${id}_${vehicle.plate}` : null, fetchVehicleDocs, { revalidateOnFocus: false })
   
   const fineCount = costsData?.fineCount || 0
   const vehicleCost = costsData?.vehicleCost || 0
@@ -435,16 +456,146 @@ export default function VehicleDetailsPage() {
                   </TabsContent>
 
                   {/* OUTRAS ABAS (MOCK) */}
-                  <TabsContent value="documentacao" className="m-0 h-full flex items-center justify-center">
-                    <div className="text-center space-y-3">
-                      <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto">
-                        <FileText className="w-8 h-8 text-muted-foreground" />
+                  <TabsContent value="documentacao" className="m-0 h-full p-5 overflow-y-auto">
+                    {/* Header & Quick Action Shortcuts */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4 mb-5">
+                      <div>
+                        <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-blue-600" />
+                          Documentação do Veículo ({vehicle?.plate?.toUpperCase() || ''})
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          CRLV, Licenciamento, Apólices de seguro e laudos de vistoria vinculados ao veículo.
+                        </p>
                       </div>
-                      <h3 className="font-semibold text-lg">Módulo de Documentação</h3>
-                      <p className="text-muted-foreground text-sm max-w-sm">
-                        O sistema carregará aqui os CRLVs, contratos e licenciamentos integrados ao veículo.
-                      </p>
+
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 text-xs font-semibold gap-1.5 shadow-2xs"
+                          onClick={() => router.push(`/documents?search=${vehicle?.plate || ''}`)}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          Ver na Central de Documentos
+                        </Button>
+
+                        <Button 
+                          size="sm" 
+                          className="h-8 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-2xs"
+                          onClick={() => router.push(`/documents`)}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Anexar Documento
+                        </Button>
+                      </div>
                     </div>
+
+                    {/* Real Documents List / Table */}
+                    {vehicleDocs && vehicleDocs.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {vehicleDocs.map((doc: any) => (
+                          <div key={doc.id} className="p-4 border rounded-xl bg-card hover:border-blue-300 transition-colors flex flex-col justify-between gap-3 shadow-2xs">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center shrink-0">
+                                  <FileText className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-xs text-foreground line-clamp-1">{doc.name}</h4>
+                                  <span className="text-[10px] text-muted-foreground font-mono">
+                                    {doc.category || 'Geral'} {doc.number ? `• Nº ${doc.number}` : ''}
+                                  </span>
+                                </div>
+                              </div>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                doc.status === 'Válido' || doc.status === 'Ativo' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/60' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/60'
+                              }`}>
+                                {doc.status || 'Válido'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs pt-2 border-t border-border/50 text-muted-foreground">
+                              <span>Vencimento: {doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString('pt-BR') : 'Indeterminado'}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 px-2 text-[11px] font-semibold text-blue-600 hover:text-blue-700 gap-1"
+                                onClick={() => router.push(`/documents?id=${doc.id}`)}
+                              >
+                                Visualizar <ExternalLink className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      /* Pre-formatted Vehicle Document Shortcuts Checklist */
+                      <div className="space-y-3">
+                        <div className="p-4 rounded-xl bg-muted/30 border border-border/60 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 flex items-center justify-center shrink-0">
+                              <FileText className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-xs text-foreground">CRLV - Licenciamento Anual 2026</h4>
+                              <p className="text-[11px] text-muted-foreground">Certificado obrigatório de rodagem da placa {vehicle?.plate?.toUpperCase() || ''}.</p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 text-xs font-semibold gap-1 text-blue-600 border-blue-200 hover:bg-blue-50 shrink-0"
+                            onClick={() => router.push(`/documents?search=${vehicle?.plate || ''}`)}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Acessar CRLVs
+                          </Button>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-muted/30 border border-border/60 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 flex items-center justify-center shrink-0">
+                              <Shield className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-xs text-foreground">Apólice de Seguro da Frota</h4>
+                              <p className="text-[11px] text-muted-foreground">Cobertura de terceiros, guincho 24h e sinistros para {vehicle?.brand} {vehicle?.model}.</p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 text-xs font-semibold gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50 shrink-0"
+                            onClick={() => router.push(`/documents?search=${vehicle?.plate || ''}`)}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Ver Seguros
+                          </Button>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-muted/30 border border-border/60 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-600 flex items-center justify-center shrink-0">
+                              <FileSignature className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-xs text-foreground">Vistorias & Laudos Técnicos</h4>
+                              <p className="text-[11px] text-muted-foreground">Certificados de cronotacógrafo e laudos de inspeção veicular.</p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 text-xs font-semibold gap-1 text-purple-600 border-purple-200 hover:bg-purple-50 shrink-0"
+                            onClick={() => router.push(`/documents?search=${vehicle?.plate || ''}`)}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Ver Vistorias
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="seguros" className="m-0 h-full flex items-center justify-center">

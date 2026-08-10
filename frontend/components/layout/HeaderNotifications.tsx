@@ -176,17 +176,6 @@ export function HeaderNotifications() {
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSimulateNFe}
-              disabled={isSimulating}
-              className="h-7 px-2 text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 gap-1 rounded-md"
-              title="Testar detecção de nova NFe emitida no CNPJ"
-            >
-              {isSimulating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-              Simular NFe
-            </Button>
 
             {unreadCount > 0 && (
               <Button
