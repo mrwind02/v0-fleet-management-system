@@ -32,8 +32,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
-      <body className={cn(inter.className, outfit.variable, "antialiased")}>
+    <html lang="pt-BR" className="h-full" suppressHydrationWarning>
+      <body className={cn(inter.className, outfit.variable, "h-full antialiased")}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <TooltipProvider>{children}</TooltipProvider>

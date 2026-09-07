@@ -1,21 +1,16 @@
 @import "tailwindcss";
 
+html,
+body {
+  height: 100%;
+}
+
 html {
   scroll-behavior: smooth;
-  scroll-snap-type: y mandatory;
 }
 
 body {
-  min-height: 100vh;
   overflow-x: hidden;
-  overflow-y: auto;
-  scroll-behavior: smooth;
-}
-
-main > section, section {
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  scroll-margin-top: 60px;
 }
 
 /* Custom Brand Font & Scrollbar Hiding Utility */

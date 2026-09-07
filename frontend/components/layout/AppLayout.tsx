@@ -8,30 +8,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false)
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+    <div className="flex h-screen h-[100dvh] w-full overflow-hidden bg-background text-foreground">
       {/* Sidebar */}
       <Sidebar 
         isCollapsed={isSidebarCollapsed} 
         setIsCollapsed={setIsSidebarCollapsed} 
-        className="hidden md:flex shrink-0" 
+        className="hidden md:flex shrink-0 h-full" 
       />
 
       {/* Main Content Area */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">
         <Header 
           toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
         />
         
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10 p-3 sm:p-4 lg:p-5">
-          <div className="mx-auto max-w-7xl w-full">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-muted/10 p-3 sm:p-4 lg:p-5 flex flex-col justify-between">
+          <div className="mx-auto max-w-7xl w-full flex-1">
             {children}
           </div>
+          
+          {/* Discreet Footer */}
+          <footer className="shrink-0 border-t py-4 text-center text-xs text-muted-foreground/60 bg-transparent mt-6">
+            <p>© {new Date().getFullYear()} FrotaOne - Todos os direitos reservados.</p>
+          </footer>
         </main>
-        
-        {/* Discreet Footer */}
-        <footer className="shrink-0 border-t py-4 text-center text-xs text-muted-foreground/60 bg-muted/10">
-          <p>© {new Date().getFullYear()} FrotaOne - Todos os direitos reservados.</p>
-        </footer>
       </div>
     </div>
   )
