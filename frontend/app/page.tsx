@@ -19,7 +19,7 @@ import { Footer } from "@/components/landing/Footer"
 
 export default function RootPage() {
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-600 selection:text-white antialiased">
+    <div className="h-full overflow-y-auto bg-white text-slate-900 font-sans selection:bg-blue-600 selection:text-white antialiased">
       <Navbar />
       <main className="pt-0">
         <HeroSection />

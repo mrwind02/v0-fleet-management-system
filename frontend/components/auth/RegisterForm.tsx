@@ -52,7 +52,7 @@ export function RegisterForm() {
     }
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white relative overflow-hidden font-sans p-4">
+        <div className="flex items-center justify-center h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white relative overflow-x-hidden font-sans p-4">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-blue-500/10 dark:bg-blue-600/15 blur-[130px] rounded-full pointer-events-none -z-0" />
 
             <div className="w-full max-w-md relative z-10">

@@ -233,7 +233,7 @@ export default function FuelDetailsPage() {
               </TabsList>
             </div>
 
-            <div className="flex-1 p-0 overflow-y-auto">
+            <div className="flex-1 p-0">
               
               <TabsContent value="resumo" className="m-0 h-full p-6 space-y-8">
                 <div>

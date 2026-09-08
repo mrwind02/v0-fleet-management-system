@@ -3,14 +3,11 @@
 html,
 body {
   height: 100%;
+  overflow: hidden;
 }
 
 html {
   scroll-behavior: smooth;
-}
-
-body {
-  overflow-x: hidden;
 }
 
 /* Custom Brand Font & Scrollbar Hiding Utility */

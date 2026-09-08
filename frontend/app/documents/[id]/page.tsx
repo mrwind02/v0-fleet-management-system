@@ -140,7 +140,7 @@ export default function DocumentDetailsPage() {
               </TabsList>
             </div>
             
-            <div className="p-5 flex-1 overflow-y-auto">
+            <div className="p-5 flex-1">
               <TabsContent value="resumo" className="m-0 h-full">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
                   <div className="lg:col-span-2">

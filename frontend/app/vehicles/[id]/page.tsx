@@ -377,7 +377,7 @@ export default function VehicleDetailsPage() {
                   </TabsList>
                 </div>
 
-                <div className="flex-1 p-5 overflow-y-auto">
+                <div className="flex-1 p-5">
                   
                   {/* TAB: VISÃO GERAL */}
                   <TabsContent value="visao-geral" className="m-0 space-y-5 h-full animate-in fade-in">
@@ -610,7 +610,7 @@ export default function VehicleDetailsPage() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="manutencao" className="m-0 h-full p-4 overflow-y-auto">
+                  <TabsContent value="manutencao" className="m-0 h-full p-4">
                     <h3 className="font-semibold text-lg border-b pb-2 mb-4">Plano de Manutenção</h3>
                     {costsData?.workOrders && costsData.workOrders.length > 0 ? (
                       <div className="space-y-3">
@@ -642,7 +642,7 @@ export default function VehicleDetailsPage() {
                     )}
                   </TabsContent>
 
-                  <TabsContent value="historico" className="m-0 h-full p-4 overflow-y-auto">
+                  <TabsContent value="historico" className="m-0 h-full p-4">
                     <h3 className="font-semibold text-lg border-b pb-2 mb-4">Linha do Tempo</h3>
                     <Timeline events={
                       [
