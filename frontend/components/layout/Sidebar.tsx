@@ -98,7 +98,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed, className }: SidebarProps
   return (
     <div
       className={cn(
-        "relative flex flex-col bg-[#0B132B] text-slate-300 transition-all duration-300 ease-in-out z-20 shadow-xl",
+        "relative flex flex-col h-full bg-[#0B132B] text-slate-300 transition-all duration-300 ease-in-out z-20 shadow-xl",
         isCollapsed ? "w-[72px]" : "w-64",
         className
       )}

@@ -8,7 +8,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false)
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-background text-foreground">
+    <div className="flex h-screen h-[100dvh] w-full overflow-hidden bg-background text-foreground">
       {/* Sidebar */}
       <Sidebar 
         isCollapsed={isSidebarCollapsed} 
