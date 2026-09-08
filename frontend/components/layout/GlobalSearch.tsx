@@ -144,11 +144,12 @@ export function GlobalSearch() {
         </kbd>
       </Button>
 
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog open={open} onOpenChange={setOpen} showCloseButton={false}>
         <CommandInput
           placeholder="Buscar: veículo, motorista, configuração, integração..."
           value={search}
           onValueChange={setSearch}
+          onClear={() => setSearch("")}
         />
         <CommandList className="h-[460px] max-h-[460px] p-2">
           {loading && (

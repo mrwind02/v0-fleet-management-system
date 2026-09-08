@@ -34,7 +34,7 @@ function CommandDialog({
   description = "Search for a command to run...",
   children,
   className,
-  showCloseButton = true,
+  showCloseButton = false,
   ...props
 }: React.ComponentProps<typeof Dialog> & {
   title?: string
@@ -62,8 +62,11 @@ function CommandDialog({
 
 function CommandInput({
   className,
+  onClear,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input>) {
+}: React.ComponentProps<typeof CommandPrimitive.Input> & {
+  onClear?: () => void
+}) {
   return (
     <div className="p-3 pb-2.5 bg-muted/10 border-b">
       <div
@@ -79,6 +82,26 @@ function CommandInput({
           )}
           {...props}
         />
+        {onClear && (
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onClear()
+            }}
+            className={cn(
+              "shrink-0 text-xs font-medium px-2 py-0.5 rounded border border-border/80 transition-all select-none",
+              Boolean(props.value)
+                ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 cursor-pointer shadow-xs"
+                : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/50 cursor-pointer"
+            )}
+            title="Limpar busca"
+          >
+            Limpar
+          </button>
+        )}
       </div>
     </div>
   )
